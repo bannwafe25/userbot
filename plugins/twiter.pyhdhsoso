@@ -1,0 +1,225 @@
+import os
+import random
+import logging
+import requests
+from io import BytesIO
+from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont
+from pyrogram import filters
+from pyrogram.types import Message
+
+# --- IMPORT LOCAL ---
+from clients import navy
+from helpers import CMD
+from database import dB
+
+# --- KONFIGURASI MODUL --
+__MODULE__ = "ᴛᴡᴇᴇᴛ"
+__HELP__ = """<blockquote>Command Help **ᴛᴡᴇᴇᴛ**</blockquote>
+<blockquote><b>Bantuan untuk Tweet Image</b>
+
+<b>• Perintah:</b> <code>{0}tweet</code> [teks / reply]
+  Membuat gambar tweet ukuran besar (Ultra HD), lebar, dan presisi tinggi seperti Twitter asli.
+</blockquote>
+"""
+
+# Logging Setup
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("TweetMaker")
+
+# ===== CONFIG VISUAL TWITTER PRESETS (ULTRA HD & LEBAR) =====
+FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+FONT_REG = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+if not os.path.exists(FONT_BOLD):
+    FONT_BOLD = FONT_REG = "arial.ttf"
+
+BG_COLOR = "#000000"         # Hitam pekat Twitter
+WHITE = "#F7F9F9"            # Putih bersih teks utama Twitter
+GRAY = "#71767B"             # Abu-abu teks sekunder Twitter
+LINE_COLOR = "#2F3336"       # Garis tipis pembatas Twitter
+VERIFIED_COLOR = "#1DA1F2"   
+
+# Resolusi dinaikkan menjadi 2000px agar kanvas menjadi sangat lebar dan jernih
+CANVAS_WIDTH = 750          
+PADDING_X = 40               # Jarak tepi diperlebar secara proporsional
+
+# URL Aset Resmi dari Internet
+TWITTER_DEFAULT_AVATAR = "https://twimg.com"
+VERIFIED_BADGE_URL = "https://wikimedia.org"
+
+# --- UTILS ---
+def circle_avatar(img):
+    mask = Image.new("L", img.size, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse([0, 0, img.size[0], img.size[1]], fill=255)
+    img.putalpha(mask)
+    return img
+
+def wrap_text_by_pixels(text, font, max_width, draw):
+    words = text.split(' ')
+    lines = []
+    current_line = []
+    
+    for word in words:
+        test_line = ' '.join(current_line + [word])
+        if draw.textlength(test_line, font=font) <= max_width:
+            current_line.append(word)
+        else:
+            if current_line:
+                lines.append(' '.join(current_line))
+            current_line = [word]
+    if current_line:
+        lines.append(' '.join(current_line))
+    return lines
+
+# --- COMMAND HANDLER ---
+@CMD.UBOT("tweet")
+async def tweet_cmd_handler(client, message: Message):
+    if message.reply_to_message:
+        text = message.reply_to_message.text or message.reply_to_message.caption
+        user = message.reply_to_message.from_user
+    else:
+        text = client.get_arg(message)
+        user = message.from_user
+
+    if not text:
+        return await message.reply("❌ <b>Berikan teks atau reply ke pesan!</b>")
+
+    inf_msg = await message.reply("🔍 <i>Generating Large HD Tweet Image...</i>")
+    
+    try:
+        # 1. Download Avatar (Ukuran foto profil diperbesar menjadi 160x160 px agar terlihat besar)
+        if user and user.photo:
+            try:
+                ava_path = await client.download_media(user.photo.big_file_id)
+                avatar = Image.open(ava_path).convert("RGBA").resize((160, 160))
+                os.remove(ava_path)
+            except Exception:
+                response = requests.get(TWITTER_DEFAULT_AVATAR)
+                avatar = Image.open(BytesIO(response.content)).convert("RGBA").resize((160, 160))
+        else:
+            response = requests.get(TWITTER_DEFAULT_AVATAR)
+            avatar = Image.open(BytesIO(response.content)).convert("RGBA").resize((160, 160))
+            
+        avatar = circle_avatar(avatar)
+
+        # 2. Download Centang Biru Resmi PNG (Ukuran disesuaikan menjadi 60x60 px)
+        try:
+            badge_res = requests.get(VERIFIED_BADGE_URL)
+            badge_img = Image.open(BytesIO(badge_res.content)).convert("RGBA").resize((60, 60))
+        except Exception:
+            badge_img = None
+
+        # 3. Setup Ukuran Font yang Diperbesar Sesuai Skala Kanvas 2000px
+        try:
+            bold_name_f = ImageFont.truetype(FONT_BOLD, 68)     # Nama Akun Besar
+            username_f = ImageFont.truetype(FONT_REG, 58)       # @username Besar
+            tweet_text_f = ImageFont.truetype(FONT_REG, 82)     # Isi Tweet Utama Sangat Besar
+            small_text_f = ImageFont.truetype(FONT_REG, 54)     # Waktu & Label teks biasa
+            bold_stats_f = ImageFont.truetype(FONT_BOLD, 54)    # Angka statistik tebal
+        except:
+            bold_name_f = username_f = tweet_text_f = small_text_f = bold_stats_f = ImageFont.load_default()
+
+        dummy_img = Image.new("RGB", (1, 1))
+        dummy_draw = ImageDraw.Draw(dummy_img)
+        
+        max_text_width = CANVAS_WIDTH - (PADDING_X * 2)
+        lines = wrap_text_by_pixels(text, tweet_text_f, max_text_width, dummy_draw)
+
+        # 4. Hitung Tinggi Dinamis Secara Proporsional untuk Skala Besar
+        line_height = 115   # Jarak vertikal antar-baris teks diperlebar agar seimbang
+        header_height = 290
+        footer_height = 360
+        dynamic_height = header_height + (len(lines) * line_height) + footer_height
+        
+        base = Image.new("RGB", (CANVAS_WIDTH, dynamic_height), BG_COLOR)
+        draw = ImageDraw.Draw(base)
+
+        # 5. Pasang Avatar & Nama (Posisi disesuaikan pada resolusi tinggi)
+        base.paste(avatar, (PADDING_X, 70), avatar)
+        full_name = (user.first_name if user else "User") or "Telegram User"
+        user_name = (user.username if user else "anonymous") or "anonymous"
+
+        # Koordinat nama digeser ke kanan setelah ukuran avatar diperbesar
+        draw.text((290, 75), full_name, font=bold_name_f, fill=WHITE)
+        name_w = draw.textlength(full_name, font=bold_name_f)
+        
+        # Tempel Centang Biru PNG Asli di sebelah Nama Akun
+        if badge_img:
+            base.paste(badge_img, (290 + int(name_w) + 18, 82), badge_img)
+
+        draw.text((290, 160), f"@{user_name}", font=username_f, fill=GRAY)
+
+        # 6. Render Isi Kalimat Tweet Utama (Skala HD)
+        current_y = header_height
+        for line in lines:
+            draw.text((PADDING_X, current_y), line, font=tweet_text_f, fill=WHITE)
+            current_y += line_height
+
+        # 7. Format Waktu & Penempatan Rata Kanan Views (Persis Contoh Gambar Anda)
+        current_y += 80
+        # Format waktu menggunakan pola huruf kecil "am/pm" yang serupa dengan gambar contoh
+        time_str = datetime.now().strftime("%I:%M %p · %d %b %Y").lower()
+        
+        # Angka views menggunakan separator titik ribuan otomatis
+        views_val = f"{random.randint(100, 999)}.{random.randint(100, 999)}"
+        views_text = f"{views_val} Views"
+        
+        draw.text((PADDING_X, current_y), time_str, font=small_text_f, fill=GRAY)
+        
+        v_w = draw.textlength(views_text, font=bold_stats_f)
+        
+        # Angka Views diletakkan rata kanan (Sisi kanan kanvas)
+        draw.text((CANVAS_WIDTH - PADDING_X - v_w, current_y), views_val, font=bold_stats_f, fill=WHITE)
+        v_num_w = draw.textlength(views_val, font=bold_stats_f)
+        draw.text((CANVAS_WIDTH - PADDING_X - v_w + v_num_w + 12, current_y), "Views", font=small_text_f, fill=GRAY)
+
+        # Garis Pembatas Utama (Ketebalan disesuaikan skala besar)
+        current_y += 85
+        draw.line([PADDING_X, current_y, CANVAS_WIDTH - PADDING_X, current_y], fill=LINE_COLOR, width=2)
+
+        # 8. Render Baris Stats Tengah (Retweets, Quotes, Likes, Bookmarks)
+        current_y += 45
+        
+        rt_c = f"{random.randint(1000, 9999):,}".replace(",", ".")
+        qt_c = f"{random.randint(100, 999):,}".replace(",", ".")
+        lk_c = f"{random.randint(1000, 9999):,}".replace(",", ".")
+        bm_c = f"{random.randint(50, 500):,}".replace(",", ".")
+        
+        stats_data = [
+            (rt_c, "Retweets"),
+            (qt_c, "Quotes"),
+            (lk_c, "Likes"),
+            (bm_c, "Bookmarks")
+        ]
+        
+        # Mengatur spasi horizontal antar item data statistik agar seimbang di kanvas lebar 2000px
+        start_x = PADDING_X
+        for num, label in stats_data:
+            draw.text((start_x, current_y), num, font=bold_stats_f, fill=WHITE)
+            num_w = draw.textlength(num, font=bold_stats_f)
+            
+            draw.text((start_x + num_w + 12, current_y), label, font=small_text_f, fill=GRAY)
+            lbl_w = draw.textlength(label, font=small_text_f)
+            
+            # Geser koordinat X ke kanan untuk item statistik berikutnya (jarak ditambah menjadi 75px)
+            start_x += num_w + lbl_w + 75
+
+        # 9. Mengirim Gambar Akhir Melalui Memori BytesIO
+        output_buffer = BytesIO()
+        output_buffer.name = "tweet_hd.png"
+        base.save(output_buffer, "PNG")
+        output_buffer.seek(0)
+
+        await inf_msg.delete()
+        await client.send_photo(
+            chat_id=message.chat.id,
+            photo=output_buffer,
+            reply_to_message_id=message.reply_to_message.id if message.reply_to_message else message.id
+        )
+
+    except Exception as e:
+        logger.error(f"Tweet Error: {e}")
+        await inf_msg.edit(f"❌ <b>Gagal:</b> <code>{e}</code>")
+      
