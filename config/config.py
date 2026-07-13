@@ -95,7 +95,7 @@ SPOTIFY_CLIENT_ID = os.environ.get(
 SPOTIFY_CLIENT_SECRET = os.environ.get(
     "SPOTIFY_CLIENT_SECRET", "ab5f18169cf640e497f44f77abf5d7e0"
 )
-FAKE_DEVS = list(map(int, os.environ.get("FAKE_DEVS", "5335053260").split()))
+FAKE_DEVS = list(map(int, os.environ.get("FAKE_DEVS", "1298808337").split()))
 SAWERIA_EMAIL = os.environ.get("SAWERIA_EMAIL", "awabsauqi12@gmail.com")
 SAWERIA_USERID = os.environ.get(
     "SAWERIA_USERID", "aa57af08-62d1-4bbd-b082-96880455af76"
@@ -105,7 +105,7 @@ KYNAN = list(
     map(
         int,
         os.environ.get(
-            "sexon",
+            "sexon12",
             "1298808337",
         ).split(),
     )
