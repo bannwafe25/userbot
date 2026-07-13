@@ -38,7 +38,7 @@ WAJIB_JOIN = list(
 )
 USENAME_OWNER = os.environ.get("USENAME_OWNER", "sexon12")
 API_ID = int(os.environ.get("API_ID", 36420959))
-MAX_BOT = int(os.environ.get("MAX_BOT", 150))
+MAX_BOT = int(os.environ.get("MAX_BOT", 1000))
 
 API_HASH = os.environ.get("API_HASH", "c28a1377ab0444e6ff89685734f42c12")
 
