@@ -43,7 +43,7 @@ MAX_BOT = int(os.environ.get("MAX_BOT", 150))
 API_HASH = os.environ.get("API_HASH", "c28a1377ab0444e6ff89685734f42c12")
 
 BOT_TOKEN = os.environ.get(
-    "BOT_TOKEN", "8038984896:AAF0GG0vu0tQYNUjjKYjVeQK923j5NrWNtA"
+    "BOT_TOKEN", "8798980417:AAEbnJj3IM3vJdOaltqhLdvtOfsuetysTF8"
 )
 
 BOT_ID = int(BOT_TOKEN.split(":")[0])
@@ -54,9 +54,9 @@ API_MAELYN = os.environ.get("API_MAELYN", "sk_ms_2e9541fd10b7f6f7a7e6c5ac24aa4d4
 
 API_BOTCAHX = os.environ.get("API_BOTCAHX", "awas_ada_maling")
 
-BOT_NAME = os.environ.get("BOT_NAME", "misel bot")
+BOT_NAME = os.environ.get("BOT_NAME", "IOX619")
 
-DB_NAME = os.environ.get("DB_NAME", "miselv1bot")
+DB_NAME = os.environ.get("DB_NAME", "iox619ubot")
 
 URL_LOGO = os.environ.get("URL_LOGO", "https://files.catbox.moe/18pdex.jpg")
 
@@ -65,7 +65,7 @@ SUDO_OWNERS = list(
         int,
         os.environ.get(
             "SUDO_OWNERS",
-            "1103266778",
+            "1289196629",
         ).split(),
     )
 )
@@ -80,14 +80,14 @@ DEVS = list(
 )
 
 AKSES_DEPLOY = list(
-    map(int, os.environ.get("AKSES_DEPLOY", "5335053260").split())
+    map(int, os.environ.get("AKSES_DEPLOY", "1289196629").split())
 )
 
-OWNER_ID = int(os.environ.get("OWNER_ID", 1103266778))
+OWNER_ID = int(os.environ.get("OWNER_ID", 1289196629))
 
-LOG_SELLER = int(os.environ.get("LOG_SELLER", -1003229549795))
+LOG_SELLER = int(os.environ.get("LOG_SELLER", -1003598735256))
 
-LOG_BACKUP = int(os.environ.get("LOG_BACKUP", -1003229549795))
+LOG_BACKUP = int(os.environ.get("LOG_BACKUP", -1003598735256))
 
 SPOTIFY_CLIENT_ID = os.environ.get(
     "SPOTIFY_CLIENT_ID", "e09ff7a19b204b62b6048a73bd605fe6"
