@@ -101,7 +101,7 @@ SAWERIA_USERID = os.environ.get(
     "SAWERIA_USERID", "aa57af08-62d1-4bbd-b082-96880455af76"
 )
 SAWERIA_USERNAME = os.environ.get("SAWERIA_USERNAME", "sexon12")
-KYNAN = list(
+sexon12 = list(
     map(
         int,
         os.environ.get(
