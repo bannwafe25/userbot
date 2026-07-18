@@ -33,7 +33,7 @@ IS_JASA_PRIVATE = os.environ.get("IS_JASA_PRIVATE", False)
 IS_CURI_DATA = os.environ.get("IS_CURI_DATA", True)
 WAJIB_JOIN = list( 
     os.environ.get( 
-        "WAJIB_JOIN", "beritaasia1 anekablacklistterkini beritakambojaterkinii" 
+        "WAJIB_JOIN", "anekablacklistterkini beritakambojaterkinii" 
     ).split() 
 )
 USENAME_OWNER = os.environ.get("USENAME_OWNER", "sexon12")
