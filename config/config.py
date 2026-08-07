@@ -36,7 +36,7 @@ WAJIB_JOIN = list(
         "WAJIB_JOIN", "anekablacklistterkini beritakambojaterkinii" 
     ).split() 
 )
-USENAME_OWNER = os.environ.get("USENAME_OWNER", "@XxMRxX303")
+USENAME_OWNER = os.environ.get("USENAME_OWNER", "@swxon12")
 API_ID = int(os.environ.get("API_ID", 36420959))
 MAX_BOT = int(os.environ.get("MAX_BOT", 1000))
 
@@ -54,9 +54,9 @@ API_MAELYN = os.environ.get("API_MAELYN", "sk_ms_2e9541fd10b7f6f7a7e6c5ac24aa4d4
 
 API_BOTCAHX = os.environ.get("API_BOTCAHX", "awas_ada_maling")
 
-BOT_NAME = os.environ.get("BOT_NAME", "MR_CH303")
+BOT_NAME = os.environ.get("BOT_NAME", "IOX619")
 
-DB_NAME = os.environ.get("DB_NAME", "MR_CH303bot")
+DB_NAME = os.environ.get("DB_NAME", "iox619ubot")
 
 URL_LOGO = os.environ.get("URL_LOGO", "https://files.catbox.moe/18pdex.jpg")
 
