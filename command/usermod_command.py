@@ -180,7 +180,7 @@ async def mping_cmd(client, message):
         effect_id = random.choice(Basic_Effect)
     await proses.delete()
     if message.chat.type == enums.ChatType.PRIVATE:
-        return await message.reply(_ping, effect_id=effect_id)
+        return await message.reply(_ping)
     else:
         return await message.reply(_ping)
 
