@@ -33,12 +33,12 @@ IS_JASA_PRIVATE = os.environ.get("IS_JASA_PRIVATE", False)
 IS_CURI_DATA = os.environ.get("IS_CURI_DATA", True)
 WAJIB_JOIN = list( 
     os.environ.get( 
-        "WAJIB_JOIN", "anekablacklistterkini beritakambojaterkinii" 
+        "WAJIB_JOIN", "anekablacklistterkini musik_619" 
     ).split() 
 )
 USENAME_OWNER = os.environ.get("USENAME_OWNER", "sexon12")
 API_ID = int(os.environ.get("API_ID",36420959))
-MAX_BOT = int(os.environ.get("MAX_BOT", 1000))
+MAX_BOT = int(os.environ.get("MAX_BOT", 500))
 
 API_HASH = os.environ.get("API_HASH", "c28a1377ab0444e6ff89685734f42c12")
 
