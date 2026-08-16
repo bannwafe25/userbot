@@ -36,7 +36,7 @@ WAJIB_JOIN = list(
         "WAJIB_JOIN", "anekablacklistterkini musik_619" 
     ).split() 
 )
-USENAME_OWNER = os.environ.get("USENAME_OWNER", "sexon12")
+USENAME_OWNER = os.environ.get("USENAME_OWNER", "@sexon12")
 API_ID = int(os.environ.get("API_ID",36420959))
 MAX_BOT = int(os.environ.get("MAX_BOT", 500))
 
@@ -85,9 +85,9 @@ AKSES_DEPLOY = list(
 
 OWNER_ID = int(os.environ.get("OWNER_ID",1289196629))
 
-LOG_SELLER = int(os.environ.get("LOG_SELLER", -1003598735256))
+LOG_SELLER = int(os.environ.get("LOG_SELLER", 1289196629))
 
-LOG_BACKUP = int(os.environ.get("LOG_BACKUP", -1003598735256))
+LOG_BACKUP = int(os.environ.get("LOG_BACKUP",1289196629))
 
 SPOTIFY_CLIENT_ID = os.environ.get(
     "SPOTIFY_CLIENT_ID", "e09ff7a19b204b62b6048a73bd605fe6"
