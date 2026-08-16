@@ -35,11 +35,7 @@ async def disapprove_pm(c: Client, m: Message):
         APPROVED_USERS.remove(uid)
         await m.edit_text("❌ **Izin PM dicabut!**")
 
-# Sistem PM Security Anti Spam (Auto-respond)
-@Client.on_message(filters.private & ~filters.me & ~filters.bot, group=1)
-async def pm_guard(c: Client, m: Message):
-    if PM_PERMIT and m.from_user.id not in APPROVED_USERS:
-        await m.reply("⚠️ **Security Alert:** Mohon tunggu persetujuan pemilik akun sebelum mengirim pesan mendalam.")
+
 
 # Daftar Fitur Broadcast/PM Tambahan:
 # .gucast (Gcast Private) | .pmlog | .block | .unblock | .listblk | .setpmmsg | .resetpmmsg | .nopm | .yespm | .broadcastall | .gcastinline | .gcastmedia | .pmcheck | .cleanpm | .spampm | .mutepm | .unmutepm
