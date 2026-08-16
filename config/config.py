@@ -36,8 +36,8 @@ WAJIB_JOIN = list(
         "WAJIB_JOIN", "anekablacklistterkini beritakambojaterkinii" 
     ).split() 
 )
-USENAME_OWNER = os.environ.get("USENAME_OWNER", "@sexon12")
-API_ID = int(os.environ.get("API_ID", 36420959))
+USENAME_OWNER = os.environ.get("USENAME_OWNER", "sexon12")
+API_ID = int(os.environ.get("API_ID",36420959))
 MAX_BOT = int(os.environ.get("MAX_BOT", 1000))
 
 API_HASH = os.environ.get("API_HASH", "c28a1377ab0444e6ff89685734f42c12")
@@ -46,7 +46,7 @@ BOT_TOKEN = os.environ.get(
     "BOT_TOKEN", "8798980417:AAEbnJj3IM3vJdOaltqhLdvtOfsuetysTF8"
 )
 
-BOT_ID = int(BOT_TOKEN.split(":")[0])
+BOT_ID = int(BOT_TOKEN.split("8798980417:AAEbnJj3IM3vJdOaltqhLdvtOfsuetysTF8")[0])
 
 API_GEMINI = os.environ.get("API_GEMINI", "AIzaSyAMSxIG6-WV_mOGm6BL9TtFpW7GOMVmz3g")
 
@@ -83,11 +83,11 @@ AKSES_DEPLOY = list(
     map(int, os.environ.get("AKSES_DEPLOY", "1289196629").split())
 )
 
-OWNER_ID = int(os.environ.get("OWNER_ID", 1289196629))
+OWNER_ID = int(os.environ.get("OWNER_ID",1289196629))
 
-LOG_SELLER = int(os.environ.get("LOG_SELLER", -1003598735256))
+LOG_SELLER = int(os.environ.get("LOG_SELLER",-1003598735256))
 
-LOG_BACKUP = int(os.environ.get("LOG_BACKUP", -1003598735256))
+LOG_BACKUP = int(os.environ.get("LOG_BACKUP",-1003598735256))
 
 SPOTIFY_CLIENT_ID = os.environ.get(
     "SPOTIFY_CLIENT_ID", "e09ff7a19b204b62b6048a73bd605fe6"
