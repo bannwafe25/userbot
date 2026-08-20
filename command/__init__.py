@@ -60,7 +60,7 @@ from .funny_command import (cute_cmd, horny_cmd, hot_cmd, sexy_cmd, gay_cmd,
 from .gemini_command import gemini_cmd
 from .gempa_command import gempa_cmd
 from .gen_img_command import (bingai_cmd, brat_cmd, dalle_cmd, genai_cmd,
-                              maker_img_cmd, remini_cmd, startnest_cmd)
+                              maker_img_cmd, remini_cmd, startnest_cmd, quote_cmd)
 from .global_command import (gban_cmd, gbanlist_cmd, gmute_cmd, gmutelist_cmd,
                              ungban_cmd, ungmute_cmd)
 from .graph_command import tg_cmd
