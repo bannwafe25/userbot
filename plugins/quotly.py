@@ -37,4 +37,4 @@ async def _(client, message):
     if message.command[0] == "qcolor":
         return await qcolor_cmd(client, message)
     elif message.command[0] == "q":
-        return await qoutly_cmd(client, message)
+        return await quote_cmd(client, message)
