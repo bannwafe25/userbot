@@ -39,7 +39,7 @@ tgcrypto-pyrofork
 qrcode
 geopy
 cloudscraper25
-git+https://github.com/herobot19/pyrogram_heroo
+sepgram @ git+https://github.com/iyann1255/sepgram@v2.0.230
 git+https://github.com/google-gemini/generative-ai-python.git@main
 git+https://github.com/5GVckyy/hydrogram@dev
 git+https://github.com/yt-dlp/yt-dlp@master
