@@ -21,17 +21,10 @@ from pyrogram.enums import MessageMediaType
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-from config import SUDO_OWNERS
+from config import API_MAELYN, SUDO_OWNERS
 from database import dB
-from helpers import (
-    ApiImage,
-    Emoji,
-    Message,
-    Quotly,
-    Sticker,
-    Tools,
-    animate_proses,
-)
+from helpers import (ApiImage, Emoji, Message, Quotly, Sticker, Tools,
+                     animate_proses)
 
 
 def download_website(url):
@@ -405,6 +398,41 @@ async def toaudio_cmd(client, message):
     else:
         return await proses.edit(f"<b>{em.gagal}Please reply to video!!</b>")
 
+
+async def img2text_cmd(client, message):
+    em = Emoji(client)
+    await em.get()
+
+    prs = await animate_proses(message, em.proses)
+    reply = message.reply_to_message
+    if not reply:
+        return await prs.edit(f"{em.gagal}**Please reply to image!!**")
+    if reply and not reply.photo:
+        return await prs.edit(f"{em.gagal}**Please reply to image!!**")
+    arg = await Tools.maelyn_upload(message)
+    url = f"https://api.maelyn.eu/api/ai/ocr/prompt?url={arg}&apikey={API_MAELYN}"
+    respon = await Tools.fetch.get(url)
+    await prs.edit(f"{em.proses}**Scanning of image...**")
+    if respon.status_code != 200:
+        return await prs.edit(
+            f"{em.gagal}**Please try again later: {respon.status_code}**"
+        )
+    data = respon.json().get("result")
+    if not data:
+        return await prs.edit(
+            f"{em.gagal}**Please try again later: {respon.status_code}**"
+        )
+    try:
+        await message.reply(
+            f"{em.sukses}**Media:** <a href='{reply.link}'>Here</a>\n**Result:** `{data}`",
+            disable_web_page_preview=True,
+        )
+        return await prs.delete()
+    except Exception as er:
+        await prs.delete()
+        return await message.reply(f"{em.gagal}**ERROR:** {str(er)}")
+
+
 async def mmf_cmd(client, message):
     emo = Emoji(client)
     await emo.get()
@@ -579,176 +607,210 @@ async def qcolor_cmd(client, message):
         return await message.reply(jadi + iymek)
 
 
-async def quote_cmd(client: Client, message: Message):
+async def qoutly_cmd(client, message):
     em = Emoji(client)
     await em.get()
 
-    reply = message.reply_to_message
-    if not reply:
-        await message.edit_text(
-            f"{em.gagal} Silakan *reply* ke pesan yang ingin dijadikan Quotly."
-        )
-        return
+    if not message.reply_to_message:
+        return await message.reply(f"{em.gagal}**Please reply to a message!**")
 
-    # Custom background color
-    bg_color = "#1b1429"
-    if len(message.command) > 1:
-        bg_color = message.command[1]
+    pros = await animate_proses(message, em.proses)
+    reply_msg = message.reply_to_message
+    cmd = message.command[1:]
+    print(f"Cmd: {cmd}")
 
-    progress = await message.edit_text(
-        f"{em.proses} Sedang merender Quotly..."
-    )
+    def get_color(index=0):
+        return cmd[index] if len(cmd) > index else random.choice(Quotly.colors)
 
     try:
-        # 1. Data user target
-        user = reply.from_user or reply.sender_chat
-
-        user_id = user.id if user else 1
-        first_name = (
-            user.first_name
-            if hasattr(user, "first_name") and user.first_name
-            else (user.title or "User")
-        )
-        last_name = (
-            user.last_name
-            if hasattr(user, "last_name") and user.last_name
-            else ""
-        )
-        username = (
-            user.username
-            if hasattr(user, "username") and user.username
-            else ""
-        )
-
-        # 2. Foto profil
-        avatar_url = (
-            f"https://ui-avatars.com/api/?name={first_name.replace(' ', '+')}"
-            "&background=random"
-        )
-
-        if user and hasattr(user, "photo") and user.photo:
-            try:
-                photo_bytes = await client.download_media(
-                    user.photo.big_file_id,
-                    in_memory=True
-                )
-
-                if photo_bytes:
-                    avatar_url = (
-                        "data:image/jpeg;base64,"
-                        f"{base64.b64encode(photo_bytes.getvalue()).decode()}"
-                    )
-
-            except Exception:
-                pass
-
-        text_content = reply.text or reply.caption or ""
-
-        # 3. Data pengirim
-        from_data = {
-            "id": user_id,
-            "first_name": first_name,
-            "last_name": last_name,
-            "username": username,
-            "photo": {
-                "url": avatar_url
+        if not cmd:
+            payload = {
+                "type": "quote",
+                "format": "png",
+                "backgroundColor": get_color(),
+                "messages": [],
             }
-        }
-
-        # 4. Reply message
-        reply_message_data = None
-
-        if reply.reply_to_message:
-            r_msg = reply.reply_to_message
-            r_user = r_msg.from_user or r_msg.sender_chat
-
-            r_id = r_user.id if r_user else 123456789
-
-            r_fname = (
-                r_user.first_name
-                if hasattr(r_user, "first_name") and r_user.first_name
-                else (r_user.title or "User")
-            )
-
-            r_lname = (
-                r_user.last_name
-                if hasattr(r_user, "last_name") and r_user.last_name
-                else ""
-            )
-
-            reply_message_data = {
-                "name": f"{r_fname} {r_lname}".strip(),
-                "text": r_msg.text or r_msg.caption or "🖼 Media",
-                "entities": [],
-                "chatId": r_id,
+            sid, title, name = await Quotly.forward_info(reply_msg)
+            messages_json = {
+                "entities": Tools.get_msg_entities(reply_msg),
+                "avatar": True,
                 "from": {
-                    "id": r_id,
-                    "name": f"{r_fname} {r_lname}".strip(),
-                    "photo": {
-                        "url": (
-                            "https://ui-avatars.com/api/?name="
-                            f"{r_fname.replace(' ', '+')}"
-                            "&background=random"
-                        )
-                    }
-                }
+                    "id": sid,
+                    "title": title,
+                    "name": name,
+                    "emoji_status": await Quotly.get_emoji(reply_msg),
+                },
+                "text": await Quotly.t_or_c(reply_msg),
+                "replyMessage": {},
+            }
+            payload["messages"].append(messages_json)
+        elif cmd[0].startswith("@"):
+            color = get_color(1)
+            include_reply = len(cmd) > 2 and cmd[2] == "-r"
+            payload = {
+                "type": "quote",
+                "format": "png",
+                "backgroundColor": color,
+                "messages": [],
+            }
+            username = cmd[0][1:]
+            user = await client.get_users(username)
+            if user.id in SUDO_OWNERS:
+                return await pros.edit(f"{em.gagal}**You can't quote this user**")
+
+            fake_msg = user
+            name = fake_msg.first_name
+            if fake_msg.last_name:
+                name += f" {fake_msg.last_name}"
+
+            emoji_status = None
+            if fake_msg.emoji_status:
+                emoji_status = str(fake_msg.emoji_status.custom_emoji_id)
+
+            if include_reply:
+                replied = reply_msg.reply_to_message
+                reply_message = Quotly.parse_reply_info(replied)
+            else:
+                reply_message = {}
+
+            messages_json = {
+                "entities": Tools.get_msg_entities(reply_msg),
+                "avatar": True,
+                "from": {
+                    "id": fake_msg.id,
+                    "title": name,
+                    "name": name,
+                    "emoji_status": emoji_status,
+                },
+                "text": await Quotly.t_or_c(reply_msg),
+                "replyMessage": reply_message,
             }
 
-        message_object = {
-            "from": from_data,
-            "text": text_content,
-            "entities": [],
-            "avatar": True
-        }
-
-        if reply_message_data:
-            message_object["replyMessage"] = reply_message_data
-
-        # 5. Payload
-        payload = {
-            "backgroundColor": bg_color,
-            "width": 512,
-            "height": 768,
-            "scale": 2,
-            "emojiBrand": "apple",
-            "messages": [
-                message_object
-            ]
-        }
-
-        # 6. Generate
-        headers = {
-            "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0"
-        }
-
-        async with httpx.AsyncClient(timeout=25.0) as http_client:
-            response = await http_client.post(
-                "https://quote.yuri.ly/generate.webp",
-                json=payload,
-                headers=headers
-            )
-
-        if response.status_code != 200:
-            await progress.edit_text(
-                f"{em.gagal} API Error ({response.status_code}):\n"
-                f"`{response.text[:100]}`"
-            )
-            return
-
-        sticker_data = BytesIO(response.content)
-        sticker_data.name = "quotly.webp"
-
-        await message.reply_sticker(
-            sticker=sticker_data
-        )
-
-        await progress.delete()
+            payload["messages"].append(messages_json)
+        elif cmd[0].startswith("-r"):
+            replied = reply_msg.reply_to_message
+            reply_message = Quotly.parse_reply_info(replied)
+            payload = {
+                "type": "quote",
+                "format": "png",
+                "backgroundColor": get_color(1),
+                "messages": [],
+            }
+            sid, title, name = await Quotly.forward_info(reply_msg)
+            messages_json = {
+                "entities": Tools.get_msg_entities(reply_msg),
+                "avatar": True,
+                "from": {
+                    "id": sid,
+                    "title": title,
+                    "name": name,
+                    "emoji_status": await Quotly.get_emoji(reply_msg),
+                },
+                "text": await Quotly.t_or_c(reply_msg),
+                "replyMessage": reply_message,
+            }
+            payload["messages"].append(messages_json)
+        elif cmd[0].isdigit():
+            payload = {
+                "type": "quote",
+                "format": "png",
+                "backgroundColor": get_color(1),
+                "messages": [],
+                "scale": 2,
+            }
+            sid, title, name = await Quotly.forward_info(reply_msg)
+            messages_json = {
+                "entities": Tools.get_msg_entities(reply_msg),
+                "avatar": True,
+                "from": {
+                    "id": sid,
+                    "title": title,
+                    "name": name,
+                    "emoji_status": await Quotly.get_emoji(reply_msg),
+                },
+                "text": await Quotly.t_or_c(reply_msg),
+                "replyMessage": {},
+            }
+            payload["messages"].append(messages_json)
+            count = int(cmd[0])
+            if count > 10:
+                return await pros.edit(f"{em.gagal}**Max 10 messages**")
+            async for msg in client.get_chat_history(
+                reply_msg.chat.id, limit=count, offset_id=reply_msg.id
+            ):
+                sid, title, name = await Quotly.forward_info(msg)
+                messages_json = {
+                    "entities": Tools.get_msg_entities(msg),
+                    "avatar": True,
+                    "from": {
+                        "id": sid,
+                        "title": title,
+                        "name": name,
+                        "emoji_status": await Quotly.get_emoji(msg),
+                    },
+                    "text": await Quotly.t_or_c(msg),
+                    "replyMessage": {},
+                }
+                payload["messages"].append(messages_json)
+            payload["messages"].reverse()
+        else:
+            payload = {
+                "type": "quote",
+                "format": "png",
+                "backgroundColor": cmd[0],
+                "messages": [],
+            }
+            sid, title, name = await Quotly.forward_info(reply_msg)
+            messages_json = {
+                "entities": Tools.get_msg_entities(reply_msg),
+                "avatar": True,
+                "from": {
+                    "id": sid,
+                    "title": title,
+                    "name": name,
+                    "emoji_status": await Quotly.get_emoji(reply_msg),
+                },
+                "text": await Quotly.t_or_c(reply_msg),
+            }
+            payload["messages"].append(messages_json)
+        hasil = await Quotly.quotly(payload)
+        bio_sticker = BytesIO(hasil)
+        bio_sticker.name = "biosticker.webp"
+        await message.reply_sticker(bio_sticker)
+        await pros.delete()
 
     except Exception as e:
-        await progress.edit_text(
-            f"{em.gagal} Terjadi kesalahan:\n`{e}`"
+        print(f"ERROR: {traceback.format_exc()}")
+        return await pros.edit(f"{em.gagal}{e}")
+
+
+async def textgen_cmd(client, message):
+    em = Emoji(client)
+    await em.get()
+
+    prs = await animate_proses(message, em.proses)
+    prompt = client.get_text(message)
+
+    if not prompt:
+        return await prs.edit(
+            f"{em.gagal}<b>Give the query you want to generate prompt!\n\nExample: \n<code>{message.text.split()[0]} cat on the beach</code></b>"
         )
+    url = f"https://api.maelyn.sbs/api/generator/prompt?q={prompt}&apikey={API_MAELYN}"
+    respon = await Tools.fetch.get(url)
+    if respon.status_code == 200:
+        data = respon.json()["result"]
+        if not data:
+            return await prs.edit(
+                f"**{em.gagal}Please try again: {respon.status_code}!**"
+            )
+        try:
+            await prs.edit(f"`{data}`")
+        except Exception as er:
+            await prs.delete()
+            return await message.reply(f"{em.gagal}**ERROR:** {str(er)}")
+    else:
+        return await prs.edit(f"**{em.gagal}Please try again: {respon.status_code}!**")
+
 
 async def tiny_cmd(client, message):
     em = Emoji(client)
