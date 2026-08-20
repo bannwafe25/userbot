@@ -7,6 +7,8 @@ import uuid
 import aiofiles
 import aiohttp
 from pyrogram.types import InputMediaPhoto
+from pyrogram import Client
+from pyrogram.types import Message
 
 from config import API_MAELYN
 from helpers import Bing, Emoji, Tools, animate_proses
@@ -14,6 +16,176 @@ from logs import logger
 
 
 
+async def quote_cmd(client: Client, message: Message):
+    em = Emoji(client)
+    await em.get()
+
+    reply = message.reply_to_message
+    if not reply:
+        await message.edit_text(
+            f"{em.gagal} Silakan *reply* ke pesan yang ingin dijadikan Quotly."
+        )
+        return
+
+    # Custom background color
+    bg_color = "#1b1429"
+    if len(message.command) > 1:
+        bg_color = message.command[1]
+
+    progress = await message.edit_text(
+        f"{em.proses} Sedang merender Quotly..."
+    )
+
+    try:
+        # 1. Data user target
+        user = reply.from_user or reply.sender_chat
+
+        user_id = user.id if user else 1
+        first_name = (
+            user.first_name
+            if hasattr(user, "first_name") and user.first_name
+            else (user.title or "User")
+        )
+        last_name = (
+            user.last_name
+            if hasattr(user, "last_name") and user.last_name
+            else ""
+        )
+        username = (
+            user.username
+            if hasattr(user, "username") and user.username
+            else ""
+        )
+
+        # 2. Foto profil
+        avatar_url = (
+            f"https://ui-avatars.com/api/?name={first_name.replace(' ', '+')}"
+            "&background=random"
+        )
+
+        if user and hasattr(user, "photo") and user.photo:
+            try:
+                photo_bytes = await client.download_media(
+                    user.photo.big_file_id,
+                    in_memory=True
+                )
+
+                if photo_bytes:
+                    avatar_url = (
+                        "data:image/jpeg;base64,"
+                        f"{base64.b64encode(photo_bytes.getvalue()).decode()}"
+                    )
+
+            except Exception:
+                pass
+
+        text_content = reply.text or reply.caption or ""
+
+        # 3. Data pengirim
+        from_data = {
+            "id": user_id,
+            "first_name": first_name,
+            "last_name": last_name,
+            "username": username,
+            "photo": {
+                "url": avatar_url
+            }
+        }
+
+        # 4. Reply message
+        reply_message_data = None
+
+        if reply.reply_to_message:
+            r_msg = reply.reply_to_message
+            r_user = r_msg.from_user or r_msg.sender_chat
+
+            r_id = r_user.id if r_user else 123456789
+
+            r_fname = (
+                r_user.first_name
+                if hasattr(r_user, "first_name") and r_user.first_name
+                else (r_user.title or "User")
+            )
+
+            r_lname = (
+                r_user.last_name
+                if hasattr(r_user, "last_name") and r_user.last_name
+                else ""
+            )
+
+            reply_message_data = {
+                "name": f"{r_fname} {r_lname}".strip(),
+                "text": r_msg.text or r_msg.caption or "🖼 Media",
+                "entities": [],
+                "chatId": r_id,
+                "from": {
+                    "id": r_id,
+                    "name": f"{r_fname} {r_lname}".strip(),
+                    "photo": {
+                        "url": (
+                            "https://ui-avatars.com/api/?name="
+                            f"{r_fname.replace(' ', '+')}"
+                            "&background=random"
+                        )
+                    }
+                }
+            }
+
+        message_object = {
+            "from": from_data,
+            "text": text_content,
+            "entities": [],
+            "avatar": True
+        }
+
+        if reply_message_data:
+            message_object["replyMessage"] = reply_message_data
+
+        # 5. Payload
+        payload = {
+            "backgroundColor": bg_color,
+            "width": 512,
+            "height": 768,
+            "scale": 2,
+            "emojiBrand": "apple",
+            "messages": [
+                message_object
+            ]
+        }
+
+        # 6. Generate
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0"
+        }
+
+        async with httpx.AsyncClient(timeout=25.0) as http_client:
+            response = await http_client.post(
+                "https://quote.yuri.ly/generate.webp",
+                json=payload,
+                headers=headers
+            )
+
+        if response.status_code != 200:
+            await progress.edit_text(
+                f"{em.gagal} API Error ({response.status_code}):\n"
+                f"`{response.text[:100]}`"
+            )
+            return
+
+        sticker_data = BytesIO(response.content)
+        sticker_data.name = "quotly.webp"
+
+        await message.reply_sticker(
+            sticker=sticker_data
+        )
+
+        await progress.delete()
+
+    except Exception as e:
+        await progress.edit_text(
+            f"{em.gagal} Terjadi kesalahan:\n`{e}`"
+        )
 
 async def gen_studio(folder_name, prompt):
     prompt_clean = re.sub(r"[^\x20-\x7E]", "", prompt.strip())
