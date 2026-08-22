@@ -49,6 +49,7 @@ def paginate_modules(page_n, module_dict, prefix, is_bot=False):
                     x["module"].__MODULES__.lower(),
                     page_n,
                 ),
+                style=enums.ButtonStyle.SUCCESS,
             )
             for x in module_dict.values()
             if hasattr(x["module"], "__MODULES__")
@@ -111,6 +112,7 @@ def paginate_modules(page_n, module_dict, prefix, is_bot=False):
                                 else max_num_pages - 1
                             ),
                         ),
+                        style=enums.ButtonStyle.PRIMARY,
                     ),
                     EqInlineKeyboardButton(
                         "❌",
@@ -123,6 +125,7 @@ def paginate_modules(page_n, module_dict, prefix, is_bot=False):
                             prefix,
                             modulo_page + 1,
                         ),
+                        style=enums.ButtonStyle.PRIMARY,
                     ),
                 ]
             )
@@ -136,6 +139,7 @@ def paginate_modules(page_n, module_dict, prefix, is_bot=False):
                         prefix,
                         page_n,
                     ),
+                    style=enums.ButtonStyle.PRIMARY,
                 )
             ]
         )
