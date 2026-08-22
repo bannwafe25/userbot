@@ -81,6 +81,7 @@ def paginate_modules(page_n, module_dict, prefix, is_bot=False):
                                 else max_num_pages - 1
                             ),
                         ),
+                        style=enums.ButtonStyle.PRIMARY,
                     ),
                     EqInlineKeyboardButton(
                         "❌",
@@ -93,6 +94,7 @@ def paginate_modules(page_n, module_dict, prefix, is_bot=False):
                             prefix,
                             modulo_page + 1,
                         ),
+                        style=enums.ButtonStyle.PRIMARY,
                     ),
                 ]
             )
@@ -400,7 +402,7 @@ class ButtonUtils:
                     },
                     {
                         "text": "💎 Plan Pro",
-                        "style": enums.ButtonStyle.SUCCESS,
+                        "style": enums.ButtonStyle.PRIMARY,
                     },
                 ],
                 [
@@ -435,21 +437,21 @@ class ButtonUtils:
                 [
                     {
                         "text": "🔄 Reset Emoji",
-                        "style": enums.ButtonStyle.PRIMARY,
+                        "style": enums.ButtonStyle.DANGER,
                     },
                     {
                         "text": "🔄 Reset Prefix",
-                        "style": enums.ButtonStyle.PRIMARY,
+                        "style": enums.ButtonStyle.DANGER,
                     },
                 ],
                 [
                     {
                         "text": "🔄 Restart Userbot",
-                        "style": enums.ButtonStyle.SUCCESS,
+                        "style": enums.ButtonStyle.DANGER,
                     },
                     {
                         "text": "🔄 Reset Text",
-                        "style": enums.ButtonStyle.PRIMARY,
+                        "style": enums.ButtonStyle.DANGER,
                     },
                 ],
                 [
@@ -485,6 +487,7 @@ class ButtonUtils:
                 InlineKeyboardButton(
                     "❮",
                     callback_data=f"prev_ub {count}",
+                    style=enums.ButtonStyle.PRIMARY,
                 )
             )
 
@@ -494,6 +497,7 @@ class ButtonUtils:
             InlineKeyboardButton(
                 "Kembali",
                 callback_data=f"bcpg_acc {page_number}",
+                style=enums.ButtonStyle.DANGER,
             )
         )
 
@@ -502,6 +506,7 @@ class ButtonUtils:
                 InlineKeyboardButton(
                     "❯",
                     callback_data=f"next_ub {count}",
+                    style=enums.ButtonStyle.PRIMARY,
                 )
             )
 
@@ -580,6 +585,7 @@ class ButtonUtils:
                 InlineKeyboardButton(
                     "◀️ Prev page",
                     callback_data=f"acc_page {start_index - 10}",
+                    style=enums.ButtonStyle.PRIMARY,                    
                 )
             )
 
@@ -588,6 +594,7 @@ class ButtonUtils:
                 InlineKeyboardButton(
                     "Next page ▶️",
                     callback_data=f"acc_page {end_index}",
+                    style=enums.ButtonStyle.PRIMARY,                    
                 )
             )
 
@@ -827,7 +834,7 @@ class ButtonUtils:
                     InlineKeyboardButton(
                         "💎 Plan Pro",
                         callback_data="planusers is_pro",
-                        style=enums.ButtonStyle.SUCCESS,
+                        style=enums.ButtonStyle.PRIMARY,
                     ),
                 ],
                 [
@@ -889,6 +896,7 @@ class ButtonUtils:
                     callback_data=(
                         f"prev_font {get_id} {current_batch}"
                     ),
+                    style=enums.ButtonStyle.PRIMARY,
                 ),
                 InlineKeyboardButton(
                     "❌",
@@ -902,6 +910,7 @@ class ButtonUtils:
                     callback_data=(
                         f"next_font {get_id} {current_batch}"
                     ),
+                    style=enums.ButtonStyle.PRIMARY,                    
                 ),
             ]
         )
