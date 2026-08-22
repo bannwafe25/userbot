@@ -6,7 +6,12 @@ from uuid import uuid4
 from pyrogram import enums
 from pyrogram.errors import QueryIdInvalid, RPCError
 from pyrogram.helpers import ikb, kb
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+)
 
 from clients import session
 from database import dB, state
@@ -19,12 +24,18 @@ NUM_COLUMNS = 2
 
 class EqInlineKeyboardButton(InlineKeyboardButton):
     def __eq__(self, other):
+        if not isinstance(other, InlineKeyboardButton):
+            return NotImplemented
         return self.text == other.text
 
     def __lt__(self, other):
+        if not isinstance(other, InlineKeyboardButton):
+            return NotImplemented
         return self.text < other.text
 
     def __gt__(self, other):
+        if not isinstance(other, InlineKeyboardButton):
+            return NotImplemented
         return self.text > other.text
 
 
@@ -49,22 +60,17 @@ def paginate_modules(page_n, module_dict, prefix, is_bot=False):
         for i in range(0, len(modules), NUM_COLUMNS)
     ]
 
-    max_num_pages = (
-        ceil(len(pairs) / COLUMN_SIZE)
-        if pairs
-        else 1
-    )
-
+    max_num_pages = ceil(len(pairs) / COLUMN_SIZE) if pairs else 1
     modulo_page = page_n % max_num_pages
 
     if len(pairs) > COLUMN_SIZE:
-        pairs = (
-            pairs[
-                modulo_page * COLUMN_SIZE :
-                COLUMN_SIZE * (modulo_page + 1)
-            ]
-            + [
-                (
+        pairs = pairs[
+            modulo_page * COLUMN_SIZE : COLUMN_SIZE * (modulo_page + 1)
+        ]
+
+        if is_bot:
+            pairs.append(
+                [
                     EqInlineKeyboardButton(
                         "⬅️",
                         callback_data="{}_prev({})".format(
@@ -78,11 +84,8 @@ def paginate_modules(page_n, module_dict, prefix, is_bot=False):
                     ),
                     EqInlineKeyboardButton(
                         "❌",
-                        callback_data=(
-                            "buttonclose"
-                            if is_bot
-                            else "close help"
-                        ),
+                        callback_data="buttonclose",
+                        style=enums.ButtonStyle.DANGER,
                     ),
                     EqInlineKeyboardButton(
                         "➡️",
@@ -91,17 +94,45 @@ def paginate_modules(page_n, module_dict, prefix, is_bot=False):
                             modulo_page + 1,
                         ),
                     ),
-                )
-            ]
-        )
+                ]
+            )
+        else:
+            pairs.append(
+                [
+                    EqInlineKeyboardButton(
+                        "⬅️",
+                        callback_data="{}_prev({})".format(
+                            prefix,
+                            (
+                                modulo_page - 1
+                                if modulo_page > 0
+                                else max_num_pages - 1
+                            ),
+                        ),
+                    ),
+                    EqInlineKeyboardButton(
+                        "❌",
+                        callback_data="close help",
+                        style=enums.ButtonStyle.DANGER,
+                    ),
+                    EqInlineKeyboardButton(
+                        "➡️",
+                        callback_data="{}_next({})".format(
+                            prefix,
+                            modulo_page + 1,
+                        ),
+                    ),
+                ]
+            )
 
     else:
         pairs.append(
             [
                 EqInlineKeyboardButton(
                     "🔙 Back",
-                    callback_data=(
-                        f"{prefix}_help_back({page_n})"
+                    callback_data="{}_help_back({})".format(
+                        prefix,
+                        page_n,
                     ),
                 )
             ]
@@ -111,32 +142,21 @@ def paginate_modules(page_n, module_dict, prefix, is_bot=False):
 
 
 class ButtonUtils:
+    """
+    Keyboard utilities compatible with sepgram / styled Pyrogram.
 
-    # ============================================================
-    # REGEX
-    # ============================================================
+    Custom emoji IDs are intentionally not used.
+    """
 
     URL_PATTERN = re.compile(
-        r"(?:https?://)?"
-        r"(?:www\.)?"
+        r"(?:https?://)?(?:www\.)?"
         r"[a-zA-Z0-9.-]+"
         r"(?:\.[a-zA-Z]{2,})+"
         r"(?:[/?]\S+)?"
         r"|tg://\S+"
     )
 
-    # Support:
-    #
-    # [Text|callback]
-    # [Text|callback|primary]
-    # [Text|callback|success]
-    # [Text|callback|danger]
-    #
-    BUTTON_PATTERN = re.compile(
-        r"\[([^\[\]\r\n|]+)"
-        r"\|([^\[\]\r\n|]+)"
-        r"(?:\|([^\[\]\r\n|]+))?\]"
-    )
+    BUTTON_PATTERN = re.compile(r"\[(.*?)\|(.*?)\]")
 
     FORMAT_TAGS = {
         "<b>": "**",
@@ -146,336 +166,114 @@ class ButtonUtils:
         "<u>": "--",
     }
 
-    VALID_STYLES = {
-        "primary",
-        "success",
-        "danger",
-    }
-
-    STYLE_MAP = {
-        "primary": enums.ButtonStyle.PRIMARY,
-        "success": enums.ButtonStyle.SUCCESS,
-        "danger": enums.ButtonStyle.DANGER,
-    }
-
-    # ============================================================
-    # BASIC CHECK
-    # ============================================================
+    # ---------------------------------------------------------
+    # BASIC PARSERS
+    # ---------------------------------------------------------
 
     @staticmethod
     def is_url(text: str) -> bool:
-        """Check if text is a URL."""
-        return bool(
-            re.search(
-                ButtonUtils.URL_PATTERN,
-                text,
-            )
-        )
+        return bool(ButtonUtils.URL_PATTERN.search(text))
 
     @staticmethod
     def is_number(text: str) -> bool:
-        """Check if text is a number."""
         return text.isdigit()
 
     @staticmethod
     def is_copy(text: str) -> bool:
-        """Check if text is a copy button."""
-        return bool(
-            re.search(
-                r"copy:",
-                text,
-            )
-        )
+        return bool(re.search(r"copy:", text))
 
     @staticmethod
     def is_alert(text: str) -> bool:
-        """Check if text is an alert button."""
-        return bool(
-            re.search(
-                r"alert:",
-                text,
-            )
-        )
+        return bool(re.search(r"alert:", text))
 
     @staticmethod
     def is_web(text: str) -> bool:
-        """Check if text is a web button."""
-        return bool(
-            re.search(
-                r"web:",
-                text,
-            )
-        )
-
-    # ============================================================
-    # CATBOX
-    # ============================================================
+        return bool(re.search(r"web:", text))
 
     @staticmethod
     def cek_tg(text):
         tg_pattern = r"https?:\/\/files\.catbox\.moe\/\S+"
-
-        match = re.search(
-            tg_pattern,
-            text,
-        )
+        match = re.search(tg_pattern, text)
 
         if match:
             tg_link = match.group(0)
-
-            non_tg_text = text.replace(
-                tg_link,
-                "",
-            ).strip()
-
+            non_tg_text = text.replace(tg_link, "").strip()
             return tg_link, non_tg_text
 
         return None, text
 
-    # ============================================================
-    # PARSE BUTTONS
-    # ============================================================
+    # ---------------------------------------------------------
+    # MESSAGE BUTTON PARSER
+    # ---------------------------------------------------------
 
     @staticmethod
     def parse_msg_buttons(
         texts: str,
     ) -> Tuple[str, List[List]]:
-        """
-        Parse message buttons.
-
-        Supported:
-
-        [Button|callback]
-
-        [Button|callback|primary]
-
-        [Button|callback|success]
-
-        [Button|callback|danger]
-
-        Multiple buttons in one row:
-
-        [Delete|delete|danger][Confirm|confirm|success]
-
-        Different rows:
-
-        [Delete|delete|danger]
-        [Confirm|confirm|success]
-        """
-
         buttons = []
 
-        matches = list(
-            ButtonUtils.BUTTON_PATTERN.finditer(texts)
-        )
+        for text, url in ButtonUtils.BUTTON_PATTERN.findall(texts):
+            urls = url.split("|")
+            url = urls[0]
 
-        if not matches:
-            return texts.strip(), []
-
-        current_row = []
-        previous_end = None
-
-        for match in matches:
-            text = match.group(1).strip()
-            data = match.group(2).strip()
-            style = match.group(3)
-
-            if style:
-                style = style.strip().lower()
-
-                if style not in ButtonUtils.VALID_STYLES:
-                    logger.warning(
-                        "Invalid button style '%s' "
-                        "for '%s'. Using default.",
-                        style,
-                        text,
-                    )
-                    style = None
-
-            # ----------------------------------------------------
-            # Determine row
-            # ----------------------------------------------------
-
-            if previous_end is not None:
-                between = texts[
-                    previous_end : match.start()
-                ]
-
-                # New line = new row
-                if "\n" in between:
-                    if current_row:
-                        buttons.append(
-                            current_row
-                        )
-
-                    current_row = []
-
-            # ----------------------------------------------------
-            # Save button
-            # ----------------------------------------------------
-
-            if style:
-                current_row.append(
-                    [
-                        text,
-                        data,
-                        style,
-                    ]
-                )
+            if len(urls) > 1:
+                if buttons:
+                    buttons[-1].append([text, url])
+                else:
+                    buttons.append([[text, url]])
             else:
-                current_row.append(
-                    [
-                        text,
-                        data,
-                    ]
-                )
+                buttons.append([[text, url]])
 
-            previous_end = match.end()
+        clean_text = texts
 
-        if current_row:
-            buttons.append(
-                current_row
-            )
-
-        # --------------------------------------------------------
-        # Remove buttons from text
-        # --------------------------------------------------------
-
-        txt = ButtonUtils.BUTTON_PATTERN.sub(
-            "",
+        for match in re.findall(
+            r"\[.+?\|.+?\]",
             texts,
-        )
+        ):
+            clean_text = clean_text.replace(match, "")
 
-        # Remove excessive blank lines
-        txt = re.sub(
-            r"\n[ \t]*\n+",
-            "\n\n",
-            txt,
-        )
+        return clean_text.strip(), buttons
 
-        return txt.strip(), buttons
-
-    # ============================================================
-    # STYLE HELPER
-    # ============================================================
-
-    @staticmethod
-    def get_style(style: Optional[str]):
-        """
-        Convert style string into Pyrogram ButtonStyle.
-
-        Supported:
-            primary
-            success
-            danger
-        """
-
-        if not style:
-            return None
-
-        style = style.lower().strip()
-
-        return ButtonUtils.STYLE_MAP.get(
-            style
-        )
-
-    # ============================================================
-    # STYLED INLINE BUTTON
-    # ============================================================
-
-    @staticmethod
-    def styled_button(
-        text: str,
-        callback_data: str,
-        style: Optional[str] = None,
-    ) -> InlineKeyboardButton:
-        """
-        Create a styled inline callback button.
-
-        Example:
-
-        ButtonUtils.styled_button(
-            "Confirm",
-            "confirm",
-            "success",
-        )
-        """
-
-        kwargs = {
-            "text": text,
-            "callback_data": callback_data,
-        }
-
-        button_style = ButtonUtils.get_style(
-            style
-        )
-
-        if button_style is not None:
-            kwargs["style"] = button_style
-
-        return InlineKeyboardButton(
-            **kwargs
-        )
-
-    # ============================================================
-    # CREATE BUTTON
-    # ============================================================
+    # ---------------------------------------------------------
+    # INLINE BUTTON
+    # ---------------------------------------------------------
 
     @staticmethod
     async def create_button(
         text: str,
         data: str,
         with_suffix: str = "",
-        style: Optional[str] = None,
     ) -> InlineKeyboardButton:
-        """
-        Create an InlineKeyboardButton.
-
-        Supports:
-            URL
-            user ID
-            copy
-            alert
-            callback
-            Telegram button style
-        """
 
         data = data.strip()
 
-        kwargs = {
-            "text": text,
-        }
-
-        # --------------------------------------------------------
         # URL
-        # --------------------------------------------------------
-
         if ButtonUtils.is_url(data):
-            kwargs["url"] = data
-
-        # --------------------------------------------------------
-        # USER ID
-        # --------------------------------------------------------
-
-        elif ButtonUtils.is_number(data):
-            kwargs["user_id"] = int(data)
-
-        # --------------------------------------------------------
-        # COPY
-        # --------------------------------------------------------
-
-        elif ButtonUtils.is_copy(data):
-            kwargs["copy_text"] = data.replace(
-                "copy:",
-                "",
-                1,
+            return InlineKeyboardButton(
+                text=text,
+                url=data,
             )
 
-        # --------------------------------------------------------
-        # ALERT
-        # --------------------------------------------------------
+        # User ID
+        if ButtonUtils.is_number(data):
+            return InlineKeyboardButton(
+                text=text,
+                user_id=int(data),
+            )
 
-        elif ButtonUtils.is_alert(data):
+        # Copy text
+        if ButtonUtils.is_copy(data):
+            return InlineKeyboardButton(
+                text=text,
+                copy_text=data.replace(
+                    "copy:",
+                    "",
+                    1,
+                ),
+            )
+
+        # Alert
+        if ButtonUtils.is_alert(data):
             alert_text = data.replace(
                 "alert:",
                 "",
@@ -490,146 +288,187 @@ class ButtonUtils:
                 alert_text,
             )
 
-            kwargs["callback_data"] = (
-                f"alertcb_{int(uniq)}"
+            return InlineKeyboardButton(
+                text=text,
+                callback_data=f"alertcb_{int(uniq)}",
             )
 
-        # --------------------------------------------------------
-        # CALLBACK
-        # --------------------------------------------------------
-
-        else:
-            kwargs["callback_data"] = (
-                f"{data}_{with_suffix}"
-                if with_suffix
-                else data
-            )
-
-        # --------------------------------------------------------
-        # STYLE
-        #
-        # Style only applies to callback buttons.
-        # --------------------------------------------------------
-
-        button_style = ButtonUtils.get_style(
-            style
+        callback_data = (
+            f"{data}_{with_suffix}"
+            if with_suffix
+            else data
         )
-
-        if (
-            button_style is not None
-            and "callback_data" in kwargs
-        ):
-            kwargs["style"] = button_style
 
         return InlineKeyboardButton(
-            **kwargs
+            text=text,
+            callback_data=callback_data,
         )
-
-    # ============================================================
-    # CREATE INLINE KEYBOARD
-    # ============================================================
 
     @staticmethod
     async def create_inline_keyboard(
         buttons: List[List],
         suffix: str = "",
     ) -> InlineKeyboardMarkup:
-        """
-        Create InlineKeyboardMarkup.
-
-        Input:
-
-        [
-            [
-                ["Delete", "delete", "danger"],
-                ["Confirm", "confirm", "success"]
-            ]
-        ]
-        """
 
         keyboard = []
 
         for row in buttons:
-            keyboard_row = []
+            line = []
 
-            for button in row:
-                if len(button) < 2:
-                    continue
-
-                text = button[0]
-                data = button[1]
-
-                style = (
-                    button[2]
-                    if len(button) >= 3
-                    else None
-                )
-
-                keyboard_row.append(
+            for text, data in row:
+                line.append(
                     await ButtonUtils.create_button(
-                        text=text,
-                        data=data,
-                        with_suffix=suffix,
-                        style=style,
+                        text,
+                        data,
+                        suffix,
                     )
                 )
 
-            if keyboard_row:
-                keyboard.append(
-                    keyboard_row
-                )
+            keyboard.append(line)
 
         return InlineKeyboardMarkup(
-            keyboard
+            inline_keyboard=keyboard
         )
 
-    # ============================================================
-    # START MENU
-    # ============================================================
+    # ---------------------------------------------------------
+    # STYLED REPLY KEYBOARD
+    # ---------------------------------------------------------
 
     @staticmethod
-    def start_menu(
-        user_id: int,
-    ) -> kb:
-        """Generate start menu keyboard."""
+    def styled_kb(
+        rows=None,
+        **kwargs,
+    ) -> ReplyKeyboardMarkup:
 
+        if rows is None:
+            rows = []
+
+        keyboard = []
+
+        for row in rows:
+            line = []
+
+            for button in row:
+                if isinstance(button, str):
+                    button = KeyboardButton(
+                        text=button
+                    )
+
+                elif isinstance(button, dict):
+                    button = KeyboardButton(
+                        **button
+                    )
+
+                line.append(button)
+
+            keyboard.append(line)
+
+        return ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            **kwargs,
+        )
+
+    # ---------------------------------------------------------
+    # START MENU
+    # ---------------------------------------------------------
+
+    @staticmethod
+    def start_menu(user_id: int):
         if not session.get_session(user_id):
+
             common_buttons = [
-                ["✨ Mulai Buat Userbot"],
-                ["❓ Status Akun"],
                 [
-                    ("⚡ Plan Lite"),
-                    ("🧩 Plan Basic"),
-                    ("💎 Plan Pro"),
+                    {
+                        "text": "✨ Mulai Buat Userbot",
+                        "style": enums.ButtonStyle.SUCCESS,
+                    }
                 ],
-                ["💬 Hubungi Admins"],
-                ["🔑 Token"],
+                [
+                    {
+                        "text": "❓ Status Akun",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    }
+                ],
+                [
+                    {
+                        "text": "⚡ Plan Lite",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    },
+                    {
+                        "text": "🧩 Plan Basic",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    },
+                    {
+                        "text": "💎 Plan Pro",
+                        "style": enums.ButtonStyle.SUCCESS,
+                    },
+                ],
+                [
+                    {
+                        "text": "💬 Hubungi Admins",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    }
+                ],
+                [
+                    {
+                        "text": "🔑 Token",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    }
+                ],
             ]
 
         else:
+
             common_buttons = [
-                ["❓ Status Akun"],
-                ["🔑 Token"],
                 [
-                    ("🔄 Reset Emoji"),
-                    ("🔄 Reset Prefix"),
+                    {
+                        "text": "❓ Status Akun",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    }
                 ],
                 [
-                    ("🔄 Restart Userbot"),
-                    ("🔄 Reset Text"),
+                    {
+                        "text": "🔑 Token",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    }
                 ],
-                ["💬 Hubungi Admins"],
+                [
+                    {
+                        "text": "🔄 Reset Emoji",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    },
+                    {
+                        "text": "🔄 Reset Prefix",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    },
+                ],
+                [
+                    {
+                        "text": "🔄 Restart Userbot",
+                        "style": enums.ButtonStyle.SUCCESS,
+                    },
+                    {
+                        "text": "🔄 Reset Text",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    },
+                ],
+                [
+                    {
+                        "text": "💬 Hubungi Admins",
+                        "style": enums.ButtonStyle.PRIMARY,
+                    }
+                ],
             ]
 
-        return kb(
+        return ButtonUtils.styled_kb(
             common_buttons,
             resize_keyboard=True,
             one_time_keyboard=True,
         )
 
-    # ============================================================
+    # ---------------------------------------------------------
     # USERBOT LIST
-    # ============================================================
+    # ---------------------------------------------------------
 
     @staticmethod
     def userbot_list(
@@ -643,78 +482,67 @@ class ButtonUtils:
 
         if count > 0:
             nav_buttons.append(
-                ButtonUtils.styled_button(
+                InlineKeyboardButton(
                     "❮",
-                    f"prev_ub {count}",
-                    "primary",
+                    callback_data=f"prev_ub {count}",
                 )
             )
 
-        page_number = (
-            count // 10
-        ) * 10
+        page_number = (count // 10) * 10
 
         nav_buttons.append(
-            ButtonUtils.styled_button(
+            InlineKeyboardButton(
                 "Kembali",
-                f"bcpg_acc {page_number}",
-                "primary",
+                callback_data=f"bcpg_acc {page_number}",
             )
         )
 
         if count < total_count - 1:
             nav_buttons.append(
-                ButtonUtils.styled_button(
+                InlineKeyboardButton(
                     "❯",
-                    f"next_ub {count}",
-                    "primary",
+                    callback_data=f"next_ub {count}",
                 )
             )
 
+        buttons.append(nav_buttons)
+
         buttons.append(
-            nav_buttons
+            [
+                InlineKeyboardButton(
+                    "Get OTP",
+                    callback_data=f"get_otp {count}",
+                    style=enums.ButtonStyle.PRIMARY,
+                )
+            ]
         )
 
-        action_buttons = [
+        buttons.append(
             [
-                ButtonUtils.styled_button(
-                    "Get OTP",
-                    f"get_otp {count}",
-                    "success",
-                ),
-            ],
-            [
-                ButtonUtils.styled_button(
+                InlineKeyboardButton(
                     "Hapus User",
-                    f"del_ubot {user_id}",
-                    "danger",
+                    callback_data=f"del_ubot {user_id}",
+                    style=enums.ButtonStyle.DANGER,
                 ),
-                ButtonUtils.styled_button(
+                InlineKeyboardButton(
                     "Hapus Akun",
-                    f"ub_deak {count}",
-                    "danger",
+                    callback_data=f"ub_deak {count}",
+                    style=enums.ButtonStyle.DANGER,
                 ),
-            ],
-        ]
-
-        buttons.extend(
-            action_buttons
+            ]
         )
 
         return InlineKeyboardMarkup(
-            buttons
+            inline_keyboard=buttons
         )
 
-    # ============================================================
+    # ---------------------------------------------------------
     # ACCOUNT LIST
-    # ============================================================
+    # ---------------------------------------------------------
 
     @staticmethod
-    def account_list(
-        start_index=0,
-    ):
+    def account_list(start_index=0):
         user_list = session.get_list()
-
         total_users = len(user_list)
 
         buttons = []
@@ -731,13 +559,12 @@ class ButtonUtils:
         ):
             user_id = user_list[i]
 
-            button = ButtonUtils.styled_button(
-                f"{i + 1}",
-                f"tools_acc {user_id}-{i}",
-                "primary",
+            row.append(
+                InlineKeyboardButton(
+                    f"{i + 1}",
+                    callback_data=f"tools_acc {user_id}-{i}",
+                )
             )
-
-            row.append(button)
 
             if len(row) == 5:
                 buttons.append(row)
@@ -750,44 +577,40 @@ class ButtonUtils:
 
         if start_index > 0:
             nav_buttons.append(
-                ButtonUtils.styled_button(
+                InlineKeyboardButton(
                     "◀️ Prev page",
-                    f"acc_page {start_index - 10}",
-                    "primary",
+                    callback_data=f"acc_page {start_index - 10}",
                 )
             )
 
         if end_index < total_users:
             nav_buttons.append(
-                ButtonUtils.styled_button(
+                InlineKeyboardButton(
                     "Next page ▶️",
-                    f"acc_page {end_index}",
-                    "primary",
+                    callback_data=f"acc_page {end_index}",
                 )
             )
 
         if nav_buttons:
-            buttons.append(
-                nav_buttons
-            )
+            buttons.append(nav_buttons)
 
         buttons.append(
             [
-                ButtonUtils.styled_button(
+                InlineKeyboardButton(
                     "Tutup",
-                    "buttonclose",
-                    "danger",
+                    callback_data="buttonclose",
+                    style=enums.ButtonStyle.DANGER,
                 )
             ]
         )
 
         return InlineKeyboardMarkup(
-            buttons
+            inline_keyboard=buttons
         )
 
-    # ============================================================
+    # ---------------------------------------------------------
     # DEACTIVATE
-    # ============================================================
+    # ---------------------------------------------------------
 
     @staticmethod
     def deak(
@@ -795,25 +618,24 @@ class ButtonUtils:
         count,
     ):
         return InlineKeyboardMarkup(
-            [
+            inline_keyboard=[
                 [
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         "⬅️",
-                        f"prev_ub {int(count)}",
-                        "primary",
+                        callback_data=f"prev_ub {int(count)}",
                     ),
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         "Approve",
-                        f"deak_akun {int(count)}",
-                        "success",
+                        callback_data=f"deak_akun {int(count)}",
+                        style=enums.ButtonStyle.DANGER,
                     ),
                 ]
             ]
         )
 
-    # ============================================================
+    # ---------------------------------------------------------
     # INLINE QUERY
-    # ============================================================
+    # ---------------------------------------------------------
 
     @staticmethod
     async def generate_inline_query(
@@ -843,10 +665,6 @@ class ButtonUtils:
         except Exception:
             return None
 
-    # ============================================================
-    # SEND INLINE BOT RESULT
-    # ============================================================
-
     @staticmethod
     async def send_inline_bot_result(
         message,
@@ -855,16 +673,15 @@ class ButtonUtils:
         query,
         reply_to_message_id: Optional[int] = None,
     ) -> bool:
+
         client = message._client
 
         try:
-            query_results = (
-                await ButtonUtils.generate_inline_query(
-                    message,
-                    chat_id,
-                    bot_username,
-                    query,
-                )
+            query_results = await ButtonUtils.generate_inline_query(
+                message,
+                chat_id,
+                bot_username,
+                query,
             )
 
             if not query_results:
@@ -876,8 +693,7 @@ class ButtonUtils:
                 query_results["result_id"],
                 reply_to_message_id=reply_to_message_id,
                 message_thread_id=(
-                    message.message_thread_id
-                    or None
+                    message.message_thread_id or None
                 ),
             )
 
@@ -900,18 +716,18 @@ class ButtonUtils:
 
             return True
 
-        except RPCError:
+        except QueryIdInvalid:
             raise
 
-        except QueryIdInvalid:
+        except RPCError:
             raise
 
         except Exception:
             raise
 
-    # ============================================================
+    # ---------------------------------------------------------
     # BUILD BUTTONS
-    # ============================================================
+    # ---------------------------------------------------------
 
     @staticmethod
     def build_buttons(
@@ -925,10 +741,9 @@ class ButtonUtils:
 
         for idx, _ in enumerate(data):
             row.append(
-                ButtonUtils.styled_button(
+                (
                     str(idx + 1),
                     f"{callback}{idx}_{uniq}",
-                    "primary",
                 )
             )
 
@@ -941,21 +756,18 @@ class ButtonUtils:
 
         buttons.append(
             [
-                ButtonUtils.styled_button(
+                (
                     "❌ Close",
                     f"close {closed} {uniq}",
-                    "danger",
                 )
             ]
         )
 
-        return InlineKeyboardMarkup(
-            buttons
-        )
+        return ikb(buttons)
 
-    # ============================================================
-    # PLUS MINUS
-    # ============================================================
+    # ---------------------------------------------------------
+    # PLUS / MINUS
+    # ---------------------------------------------------------
 
     @staticmethod
     def plus_minus(
@@ -964,76 +776,80 @@ class ButtonUtils:
         plan,
     ):
         return InlineKeyboardMarkup(
-            [
+            inline_keyboard=[
                 [
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         "⁻1 bulan",
-                        f"kurang {bulan} {harga} {plan}",
-                        "danger",
+                        callback_data=(
+                            f"kurang {bulan} {harga} {plan}"
+                        ),
                     ),
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         "⁺1 bulan",
-                        f"tambah {bulan} {harga} {plan}",
-                        "success",
+                        callback_data=(
+                            f"tambah {bulan} {harga} {plan}"
+                        ),
                     ),
                 ],
                 [
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         "Konfirmasi",
-                        f"confirm {bulan} {harga} {plan}",
-                        "success",
+                        callback_data=(
+                            f"confirm {bulan} {harga} {plan}"
+                        ),
+                        style=enums.ButtonStyle.SUCCESS,
                     )
                 ],
                 [
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         "Batal",
-                        "buttonclose",
-                        "danger",
+                        callback_data="buttonclose",
+                        style=enums.ButtonStyle.DANGER,
                     )
                 ],
             ]
         )
 
-    # ============================================================
+    # ---------------------------------------------------------
     # CHOOSE PLAN
-    # ============================================================
+    # ---------------------------------------------------------
 
     @staticmethod
     def chose_plan():
         return InlineKeyboardMarkup(
-            [
+            inline_keyboard=[
                 [
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         "🧩 Plan Basic",
-                        "planusers basic",
-                        "primary",
+                        callback_data="planusers basic",
+                        style=enums.ButtonStyle.PRIMARY,
                     ),
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         "💎 Plan Pro",
-                        "planusers is_pro",
-                        "success",
+                        callback_data="planusers is_pro",
+                        style=enums.ButtonStyle.SUCCESS,
                     ),
                 ],
                 [
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         "⚡ Plan Lite",
-                        "planusers lite",
-                        "primary",
+                        callback_data="planusers lite",
+                        style=enums.ButtonStyle.PRIMARY,
                     )
                 ],
                 [
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         "Batal",
-                        "buttonclose",
-                        "danger",
+                        callback_data="buttonclose",
+                        style=enums.ButtonStyle.DANGER,
                     )
                 ],
             ]
         )
 
-    # ============================================================
+    # ---------------------------------------------------------
     # FONT KEYBOARD
-    # ============================================================
+    # ---------------------------------------------------------
 
     @staticmethod
     def create_font_keyboard(
@@ -1046,10 +862,11 @@ class ButtonUtils:
         for font_dict in font_list:
             for key, value in font_dict.items():
                 keyboard.append(
-                    ButtonUtils.styled_button(
+                    InlineKeyboardButton(
                         key,
-                        f"get_font {get_id} {value}",
-                        "primary",
+                        callback_data=(
+                            f"get_font {get_id} {value}"
+                        ),
                     )
                 )
 
@@ -1067,20 +884,24 @@ class ButtonUtils:
 
         rows.append(
             [
-                ButtonUtils.styled_button(
+                InlineKeyboardButton(
                     "⬅️",
-                    f"prev_font {get_id} {current_batch}",
-                    "primary",
+                    callback_data=(
+                        f"prev_font {get_id} {current_batch}"
+                    ),
                 ),
-                ButtonUtils.styled_button(
+                InlineKeyboardButton(
                     "❌",
-                    f"close inline_font {get_id}",
-                    "danger",
+                    callback_data=(
+                        f"close inline_font {get_id}"
+                    ),
+                    style=enums.ButtonStyle.DANGER,
                 ),
-                ButtonUtils.styled_button(
+                InlineKeyboardButton(
                     "➡️",
-                    f"next_font {get_id} {current_batch}",
-                    "primary",
+                    callback_data=(
+                        f"next_font {get_id} {current_batch}"
+                    ),
                 ),
             ]
         )
