@@ -74,7 +74,7 @@ text_formatting = """
 > Contoh callback answer`Halo Disini [Tombol 1|alert:Yang klik jelek][Tombol 2|alert:Jangan diklik Tapi boong|same]`
 >
 > Anda juga dapat membuat teks collapsed dengan button
-> Contoh `<blockquote expandable>Aku adalah NavyUbot yang dikembang oleh @kenpanan dan aku adalah userbot generasi ke 3 setelah KN-Userbot Aku lebih sempurna dari generasi sebelumnya karna aku dibuat dengan memprioritaskan flexibilitas</blockquote> [Owner|https://t.me/kenapanan]`
+> Contoh `<blockquote expandable>Aku adalah zpxuserbot yang dikembang oleh @iscrtz dan aku adalah userbot generasi ke 3 setelah KN-Userbot Aku lebih sempurna dari generasi sebelumnya karna aku dibuat dengan memprioritaskan flexibilitas</blockquote> [Owner|https://t.me/iscrtz]`
 >
 """
 
@@ -206,7 +206,7 @@ async def callback_cancel(_, callback_query):
                             callback_data=(
                                 f"vctools mutemic {uniq} {chat_id}"
                             ),
-                            style=enums.ButtonStyle.SECONDARY,
+                            style=enums.ButtonStyle.DANGER,
                         ),
                     ],
                     [
@@ -240,7 +240,7 @@ async def callback_cancel(_, callback_query):
                             callback_data=(
                                 f"vctools back {uniq} {chat_id}"
                             ),
-                            style=enums.ButtonStyle.SECONDARY,
+                            style=enums.ButtonStyle.DANGER,
                         ),
                     ],
                 ]
@@ -597,7 +597,7 @@ Title: <code>{call_title}</code>
                             callback_data=(
                                 f"vctools mutemic {uniq} {chat_id}"
                             ),
-                            style=enums.ButtonStyle.SECONDARY,
+                            style=enums.ButtonStyle.DANGER,
                         ),
                     ],
                     [
@@ -631,7 +631,7 @@ Title: <code>{call_title}</code>
                             callback_data=(
                                 f"vctools back {uniq} {chat_id}"
                             ),
-                            style=enums.ButtonStyle.SECONDARY,
+                            style=enums.ButtonStyle.DANGER,
                         ),
                     ],
                 ]
