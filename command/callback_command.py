@@ -364,12 +364,10 @@ async def cb_help(_, callback_query):
     next_match = re.match(r"help_next\((.+?)\)", callback_query.data)
     back_match = re.match(r"help_back\((\d+)\)", callback_query.data)
     create_match = re.match(r"help_create", callback_query.data)
-
     user_id = callback_query.from_user.id
     is_bot = await dB.get_var(user_id, "is_bot")
     is_bot_pro = await dB.get_var(user_id, "is_bot_pro")
     is_bot_basic = await dB.get_var(user_id, "is_bot_basic")
-
     if is_bot:
         if is_bot_pro:
             visible_helpable = HELPABLE
@@ -385,165 +383,99 @@ async def cb_help(_, callback_query):
             visible_helpable = {
                 name: data
                 for name, data in HELPABLE.items()
-                if not data.get("is_pro", False)
-                and not data.get("is_basic", False)
+                if not data.get("is_pro", False) and not data.get("is_basic", False)
             }
             plan_teks = "Lite"
     else:
         plan = await dB.get_var(user_id, "plan") or "lite"
-
         if plan == "is_pro":
             visible_helpable = HELPABLE
             plan_teks = "Pro"
-
         elif plan == "basic":
             visible_helpable = {
-                name: data
-                for name, data in HELPABLE.items()
-                if not data["is_pro"]
+                name: data for name, data in HELPABLE.items() if not data["is_pro"]
             }
             plan_teks = "Basic"
-
         elif plan == "lite":
             visible_helpable = {
                 name: data
                 for name, data in HELPABLE.items()
-                if not data["is_pro"]
-                and not data["is_basic"]
+                if not data["is_pro"] and not data["is_basic"]
             }
             plan_teks = "Lite"
-
     prefix = navy.get_prefix(user_id)
     x_ = next(iter(prefix))
-
-    full = (
-        f"<a href=tg://user?id={callback_query.from_user.id}>"
-        f"{callback_query.from_user.first_name} "
-        f"{callback_query.from_user.last_name or ''}"
-        f"</a>"
-    )
-
+    full = f"<a href=tg://user?id={callback_query.from_user.id}>{callback_query.from_user.first_name} {callback_query.from_user.last_name or ''}</a>"
     cekpic = await dB.get_var(user_id, "HELP_LOGO")
-
     text_help = (
         await dB.get_var(user_id, "text_help")
         or f"**🤖 {BOT_NAME} by {USENAME_OWNER}**"
     )
-
-    text_help2 = (
-        f"<blockquote>**🤖 {BOT_NAME} by {USENAME_OWNER}**</blockquote>"
-    )
-
+    text_help2 = f"<blockquote>**🤖 {BOT_NAME} by {USENAME_OWNER}**</blockquote>"
     costum_cq = (
         callback_query.edit_message_caption
         if cekpic
         else callback_query.edit_message_text
     )
-
     costum_text = "caption" if cekpic else "text"
-
     if mod_match:
         module = mod_match.group(1)
-
         logger.info(f"line 48: {module}")
-
         prev_page_num = int(mod_match.group(2))
         state.set(user_id, "prev_page_num", prev_page_num)
-
-        bot_text = (
-            f"{visible_helpable[module]['module'].__HELP__}"
-        ).format(
-            x_,
-            text_help2,
+        bot_text = f"{visible_helpable[module]['module'].__HELP__}".format(
+            x_, text_help2
         )
-
         if "markdown" in bot_text:
             try:
-                button_ = InlineKeyboardMarkup(
-                    inline_keyboard=[
+                button_ = ikb(
+                    [
                         [
-                            InlineKeyboardButton(
-                                "Formatting",
-                                callback_data="markdown_format",
-                                style=enums.ButtonStyle.PRIMARY,
-                            ),
-                            InlineKeyboardButton(
-                                "Fillings",
-                                callback_data="markdown_fillings",
-                                style=enums.ButtonStyle.PRIMARY,
-                            ),
+                            ("Formatting", "markdown_format", "callback_data"),
+                            ("Fillings", "markdown_fillings", "callback_data"),
                         ],
                         [
-                            InlineKeyboardButton(
-                                "🔙 Back",
-                                callback_data=(
-                                    f"help_back({prev_page_num})"
-                                ),
-                                style=enums.ButtonStyle.DANGER,
-                            ),
+                            ("🔙 Back", f"help_back({prev_page_num})"),
                         ],
                     ]
                 )
-
                 return await costum_cq(
                     **{costum_text: text_markdown},
                     reply_markup=button_,
                 )
-
             except (FloodWait, FloodPremiumWait) as e:
                 return await callback_query.answer(
-                    f"FloodWait {e}, Please Waiting!!",
-                    True,
+                    f"FloodWait {e}, Please Waiting!!", True
                 )
-
             except MessageNotModified:
                 return
-
             except MediaCaptionTooLong:
-                return await callback_query.answer(
-                    "Messages help are too long\n",
-                    True,
-                )
-
+                return await callback_query.answer("Messages help are too long\n", True)
         else:
             try:
-                button = InlineKeyboardMarkup(
-                    inline_keyboard=[
+                button = ikb(
+                    [
                         [
-                            InlineKeyboardButton(
-                                "🔙 Back",
-                                callback_data=(
-                                    f"help_back({prev_page_num})"
-                                ),
-                                style=enums.ButtonStyle.DANGER,
-                            )
+                            ("🔙 Back", f"help_back({prev_page_num})", "callback_data"),
                         ]
                     ]
                 )
-
                 return await costum_cq(
                     **{costum_text: bot_text},
                     reply_markup=button,
                 )
-
             except (FloodWait, FloodPremiumWait) as e:
                 return await callback_query.answer(
-                    f"FloodWait {e}, Please Waiting!!",
-                    True,
+                    f"FloodWait {e}, Please Waiting!!", True
                 )
 
             except MessageNotModified:
                 return
-
             except MediaCaptionTooLong:
-                return await callback_query.answer(
-                    "Messages help are too long\n",
-                    True,
-                )
+                return await callback_query.answer("Messages help are too long\n", True)
 
     elif prev_match:
         curr_page = int(prev_match.group(1))
-
         try:
             return await costum_cq(
                 **{
@@ -556,27 +488,16 @@ async def cb_help(_, callback_query):
                     )
                 },
                 reply_markup=InlineKeyboardMarkup(
-                    paginate_modules(
-                        curr_page,
-                        visible_helpable,
-                        "help",
-                        is_bot=is_bot,
-                    )
+                    paginate_modules(curr_page, visible_helpable, "help", is_bot=is_bot)
                 ),
             )
-
         except (FloodWait, FloodPremiumWait) as e:
-            return await callback_query.answer(
-                f"FloodWait {e}, Please Waiting!!",
-                True,
-            )
+            return await callback_query.answer(f"FloodWait {e}, Please Waiting!!", True)
 
         except MessageNotModified:
             return
-
     elif next_match:
         next_page = int(next_match.group(1))
-
         try:
             return await costum_cq(
                 **{
@@ -589,27 +510,16 @@ async def cb_help(_, callback_query):
                     )
                 },
                 reply_markup=InlineKeyboardMarkup(
-                    paginate_modules(
-                        next_page,
-                        visible_helpable,
-                        "help",
-                        is_bot=is_bot,
-                    )
+                    paginate_modules(next_page, visible_helpable, "help", is_bot=is_bot)
                 ),
             )
-
         except (FloodWait, FloodPremiumWait) as e:
-            return await callback_query.answer(
-                f"FloodWait {e}, Please Waiting!!",
-                True,
-            )
+            return await callback_query.answer(f"FloodWait {e}, Please Waiting!!", True)
 
         except MessageNotModified:
             return
-
     elif back_match:
         prev_page_num = int(back_match.group(1))
-
         try:
             return await costum_cq(
                 **{
@@ -623,23 +533,15 @@ async def cb_help(_, callback_query):
                 },
                 reply_markup=InlineKeyboardMarkup(
                     paginate_modules(
-                        prev_page_num,
-                        visible_helpable,
-                        "help",
-                        is_bot=is_bot,
+                        prev_page_num, visible_helpable, "help", is_bot=is_bot
                     )
                 ),
             )
-
         except (FloodWait, FloodPremiumWait) as e:
-            return await callback_query.answer(
-                f"FloodWait {e}, Please Waiting!!",
-                True,
-            )
+            return await callback_query.answer(f"FloodWait {e}, Please Waiting!!", True)
 
         except MessageNotModified:
             return
-
     elif create_match:
         try:
             return await costum_cq(
@@ -653,20 +555,11 @@ async def cb_help(_, callback_query):
                     )
                 },
                 reply_markup=InlineKeyboardMarkup(
-                    paginate_modules(
-                        0,
-                        visible_helpable,
-                        "help",
-                        is_bot=is_bot,
-                    )
+                    paginate_modules(0, visible_helpable, "help", is_bot=is_bot)
                 ),
             )
-
         except (FloodWait, FloodPremiumWait) as e:
-            return await callback_query.answer(
-                f"FloodWait {e}, Please Waiting!!",
-                True,
-            )
+            return await callback_query.answer(f"FloodWait {e}, Please Waiting!!", True)
 
         except MessageNotModified:
             return
