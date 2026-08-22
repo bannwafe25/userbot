@@ -162,7 +162,10 @@ async def callback_cancel(_, callback_query):
         user_id = callback_query.from_user.id
         userbot = session.get_session(user_id)
 
-        data_vctools = state.get(uniq, uniq)
+        data_vctools = state.get(
+            uniq,
+            uniq,
+        )
 
         if not data_vctools:
             return await callback_query.answer(
@@ -171,7 +174,7 @@ async def callback_cancel(_, callback_query):
             )
 
         # =====================================================
-        # VOICE CHAT MENU
+        # VC MENU
         # =====================================================
 
         if command == "menu":
@@ -191,14 +194,14 @@ async def callback_cancel(_, callback_query):
             sub_buttons = InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton(
+                        Ikb(
                             "🎙 Open Mic",
                             callback_data=(
                                 f"vctools openmic {uniq} {chat_id}"
                             ),
                             style=enums.ButtonStyle.SUCCESS,
                         ),
-                        InlineKeyboardButton(
+                        Ikb(
                             "🔇 Mute Mic",
                             callback_data=(
                                 f"vctools mutemic {uniq} {chat_id}"
@@ -207,14 +210,14 @@ async def callback_cancel(_, callback_query):
                         ),
                     ],
                     [
-                        InlineKeyboardButton(
+                        Ikb(
                             "❌ Leave VC",
                             callback_data=(
                                 f"vctools leavevc {uniq} {chat_id}"
                             ),
                             style=enums.ButtonStyle.DANGER,
                         ),
-                        InlineKeyboardButton(
+                        Ikb(
                             "👥 Listeners",
                             callback_data=(
                                 f"vctools listner {uniq} {chat_id}"
@@ -223,16 +226,16 @@ async def callback_cancel(_, callback_query):
                         ),
                     ],
                     [
-                        InlineKeyboardButton(
+                        Ikb(
                             "✏️ Set Title",
                             callback_data=(
                                 f"vctools vctitle {uniq} {chat_id}"
                             ),
                             style=enums.ButtonStyle.PRIMARY,
-                        )
+                        ),
                     ],
                     [
-                        InlineKeyboardButton(
+                        Ikb(
                             "⬅️ Back",
                             callback_data=(
                                 f"vctools back {uniq} {chat_id}"
@@ -249,7 +252,7 @@ async def callback_cancel(_, callback_query):
             )
 
         # =====================================================
-        # BACK TO VOICE CHAT LIST
+        # BACK
         # =====================================================
 
         elif command == "back":
@@ -278,7 +281,7 @@ async def callback_cancel(_, callback_query):
 
                 all_buttons.append(
                     [
-                        InlineKeyboardButton(
+                        Ikb(
                             f"🎙 {title}",
                             callback_data=(
                                 f"vctools menu "
@@ -302,20 +305,21 @@ async def callback_cancel(_, callback_query):
         # =====================================================
 
         elif command == "openmic":
-            group_call = await userbot.get_call(chat_id)
+            info_chat = state.get(
+                chat_id,
+                chat_id,
+            )
+            title = info_chat.get("title")
+
+            group_call = await userbot.get_call(
+                chat_id
+            )
 
             if not group_call:
                 return await callback_query.answer(
                     f"No active VC in {title}",
                     True,
                 )
-
-            info_chat = state.get(
-                chat_id,
-                chat_id,
-            )
-
-            title = info_chat.get("title")
 
             try:
                 await userbot.group_call.unmute_stream(
@@ -340,20 +344,21 @@ async def callback_cancel(_, callback_query):
         # =====================================================
 
         elif command == "mutemic":
-            group_call = await userbot.get_call(chat_id)
+            info_chat = state.get(
+                chat_id,
+                chat_id,
+            )
+            title = info_chat.get("title")
+
+            group_call = await userbot.get_call(
+                chat_id
+            )
 
             if not group_call:
                 return await callback_query.answer(
                     f"No active VC in {title}",
                     True,
                 )
-
-            info_chat = state.get(
-                chat_id,
-                chat_id,
-            )
-
-            title = info_chat.get("title")
 
             try:
                 await userbot.group_call.mute_stream(
@@ -378,20 +383,21 @@ async def callback_cancel(_, callback_query):
         # =====================================================
 
         elif command == "leavevc":
-            group_call = await userbot.get_call(chat_id)
+            info_chat = state.get(
+                chat_id,
+                chat_id,
+            )
+            title = info_chat.get("title")
+
+            group_call = await userbot.get_call(
+                chat_id
+            )
 
             if not group_call:
                 return await callback_query.answer(
                     f"No active VC in {title}",
                     True,
                 )
-
-            info_chat = state.get(
-                chat_id,
-                chat_id,
-            )
-
-            title = info_chat.get("title")
 
             try:
                 await userbot.group_call.leave_call(
@@ -412,7 +418,7 @@ async def callback_cancel(_, callback_query):
                 )
 
         # =====================================================
-        # SET VC TITLE
+        # SET TITLE
         # =====================================================
 
         elif command == "vctitle":
@@ -423,7 +429,9 @@ async def callback_cancel(_, callback_query):
 
             title = info_chat.get("title")
 
-            group_call = await userbot.get_call(chat_id)
+            group_call = await userbot.get_call(
+                chat_id
+            )
 
             if not group_call:
                 return await callback_query.answer(
@@ -438,8 +446,8 @@ async def callback_cancel(_, callback_query):
                         f"**Send me the new title for VC "
                         f"in {title}**\n\n"
                         f"__You have 2 minutes to send the "
-                        f"title, this request will be "
-                        f"canceled after 2 minutes.__"
+                        f"title, this request will be canceled "
+                        f"after 2 minutes.__"
                     ),
                     timeout=120,
                     filters=filters.text,
@@ -488,7 +496,9 @@ async def callback_cancel(_, callback_query):
 
             title = info_chat.get("title")
 
-            group_call = await userbot.get_call(chat_id)
+            group_call = await userbot.get_call(
+                chat_id
+            )
 
             if not group_call:
                 return await callback_query.answer(
@@ -498,7 +508,9 @@ async def callback_cancel(_, callback_query):
 
             call_title = group_call.title
 
-            userbot.group_call.cache_peer(chat_id)
+            userbot.group_call.cache_peer(
+                chat_id
+            )
 
             participants = (
                 await userbot.group_call.get_participants(
@@ -536,7 +548,9 @@ async def callback_cancel(_, callback_query):
                         f"{user_id} status Unknown"
                     )
 
-            total_participants = len(participants)
+            total_participants = len(
+                participants
+            )
 
             if total_participants == 0:
                 return await callback_query.answer(
@@ -551,7 +565,9 @@ async def callback_cancel(_, callback_query):
                         if i < total_participants - 1
                         else f"┖ {mention}"
                     )
-                    for i, mention in enumerate(mentions)
+                    for i, mention in enumerate(
+                        mentions
+                    )
                 ]
             )
 
@@ -569,14 +585,14 @@ Title: <code>{call_title}</code>
             sub_buttons = InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton(
+                        Ikb(
                             "🎙 Open Mic",
                             callback_data=(
                                 f"vctools openmic {uniq} {chat_id}"
                             ),
                             style=enums.ButtonStyle.SUCCESS,
                         ),
-                        InlineKeyboardButton(
+                        Ikb(
                             "🔇 Mute Mic",
                             callback_data=(
                                 f"vctools mutemic {uniq} {chat_id}"
@@ -585,14 +601,14 @@ Title: <code>{call_title}</code>
                         ),
                     ],
                     [
-                        InlineKeyboardButton(
+                        Ikb(
                             "❌ Leave VC",
                             callback_data=(
                                 f"vctools leavevc {uniq} {chat_id}"
                             ),
                             style=enums.ButtonStyle.DANGER,
                         ),
-                        InlineKeyboardButton(
+                        Ikb(
                             "👥 Listeners",
                             callback_data=(
                                 f"vctools listner {uniq} {chat_id}"
@@ -601,16 +617,16 @@ Title: <code>{call_title}</code>
                         ),
                     ],
                     [
-                        InlineKeyboardButton(
+                        Ikb(
                             "✏️ Set Title",
                             callback_data=(
                                 f"vctools vctitle {uniq} {chat_id}"
                             ),
                             style=enums.ButtonStyle.PRIMARY,
-                        )
+                        ),
                     ],
                     [
-                        InlineKeyboardButton(
+                        Ikb(
                             "⬅️ Back",
                             callback_data=(
                                 f"vctools back {uniq} {chat_id}"
