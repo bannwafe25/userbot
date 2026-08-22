@@ -97,169 +97,460 @@ async def callback_alert(_, callback_query):
 async def callback_cancel(_, callback_query):
     data = callback_query.data.split()
     query = data[0]
+
     if query == "cancel_task":
         taskid = data[1]
         get_id = int(data[2])
-        message = [obj for obj in get_objects() if id(obj) == get_id][0]
+
+        message = [
+            obj for obj in get_objects()
+            if id(obj) == get_id
+        ][0]
+
         if not message:
-            return await callback_query.answer("Message not found", True)
+            return await callback_query.answer(
+                "Message not found",
+                True,
+            )
+
         client = message._client
-        sudo_users = await dB.get_list_from_var(client.me.id, "SUDOERS")
+
+        sudo_users = await dB.get_list_from_var(
+            client.me.id,
+            "SUDOERS",
+        )
+
         if (
             callback_query.from_user.id not in sudo_users
             and callback_query.from_user.id != client.me.id
         ):
-            return await callback_query.answer("GW BUNTUNGIN TANGAN LO YA MEMEK", True)
+            return await callback_query.answer(
+                "GW BUNTUNGIN TANGAN LO YA MEMEK",
+                True,
+            )
+
         if not task.is_active(taskid):
             return await callback_query.answer(
-                "This task has been completed or canceled.", True
+                "This task has been completed or canceled.",
+                True,
             )
+
         data_todelete = state.get(
-            f"inline_cancel {taskid} {get_id}", f"inline_cancel {taskid} {get_id}"
+            f"inline_cancel {taskid} {get_id}",
+            f"inline_cancel {taskid} {get_id}",
         )
+
         chat_id = int(data_todelete.get("chat"))
         msgid = int(data_todelete.get("_id"))
-        await client.delete_messages(chat_id, msgid)
+
+        await client.delete_messages(
+            chat_id,
+            msgid,
+        )
+
         task.end_task(taskid)
-        return await message.reply(f"**Ended task: #`{taskid}`**")
+
+        return await message.reply(
+            f"**Ended task: #`{taskid}`**"
+        )
+
     elif query == "vctools":
         command = str(data[1])
         uniq = str(data[2])
         chat_id = int(data[3])
+
         user_id = callback_query.from_user.id
         userbot = session.get_session(user_id)
+
         data_vctools = state.get(uniq, uniq)
+
         if not data_vctools:
-            return await callback_query.answer("Data not valid", True)
+            return await callback_query.answer(
+                "Data not valid",
+                True,
+            )
+
+        # =====================================================
+        # VOICE CHAT MENU
+        # =====================================================
+
         if command == "menu":
-            info_chat = state.get(chat_id, chat_id)
+            info_chat = state.get(
+                chat_id,
+                chat_id,
+            )
+
             title = info_chat.get("title")
-            teks = f"<b>Voice Chat Tools\nChat: <code>{title}</code>\nID: <code>{chat_id}</code></b>"
-            sub_buttons = ikb(
+
+            teks = (
+                f"<b>Voice Chat Tools\n"
+                f"Chat: <code>{title}</code>\n"
+                f"ID: <code>{chat_id}</code></b>"
+            )
+
+            sub_buttons = InlineKeyboardMarkup(
                 [
                     [
-                        ("🎙 Open Mic", f"vctools openmic {uniq} {chat_id}"),
-                        ("🔇 Mute Mic", f"vctools mutemic {uniq} {chat_id}"),
+                        InlineKeyboardButton(
+                            "🎙 Open Mic",
+                            callback_data=(
+                                f"vctools openmic {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.SUCCESS,
+                        ),
+                        InlineKeyboardButton(
+                            "🔇 Mute Mic",
+                            callback_data=(
+                                f"vctools mutemic {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.SECONDARY,
+                        ),
                     ],
                     [
-                        ("❌ Leave VC", f"vctools leavevc {uniq} {chat_id}"),
-                        ("👥 Listeners", f"vctools listner {uniq} {chat_id}"),
+                        InlineKeyboardButton(
+                            "❌ Leave VC",
+                            callback_data=(
+                                f"vctools leavevc {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.DANGER,
+                        ),
+                        InlineKeyboardButton(
+                            "👥 Listeners",
+                            callback_data=(
+                                f"vctools listner {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.PRIMARY,
+                        ),
                     ],
-                    [("✏️ Set Title", f"vctools vctitle {uniq} {chat_id}")],
-                    [("⬅️ Back", f"vctools back {uniq} {chat_id}")],
+                    [
+                        InlineKeyboardButton(
+                            "✏️ Set Title",
+                            callback_data=(
+                                f"vctools vctitle {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.PRIMARY,
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "⬅️ Back",
+                            callback_data=(
+                                f"vctools back {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.SECONDARY,
+                        ),
+                    ],
                 ]
             )
+
             return await callback_query.edit_message_text(
-                teks, reply_markup=sub_buttons
+                teks,
+                reply_markup=sub_buttons,
             )
+
+        # =====================================================
+        # BACK TO VOICE CHAT LIST
+        # =====================================================
+
         elif command == "back":
-            data_vctools = state.get(uniq, uniq)
-            targets = data_vctools.get("targets", [])
-            teks = data_vctools.get("text", "")
+            data_vctools = state.get(
+                uniq,
+                uniq,
+            )
+
+            targets = data_vctools.get(
+                "targets",
+                [],
+            )
+
+            teks = data_vctools.get(
+                "text",
+                "",
+            )
+
             all_buttons = []
+
             for chat in targets:
                 info_chat = await userbot.get_chat(chat)
+
                 title = info_chat.title
-                chat_id = info_chat.id
-                all_buttons.append([(f"🎙 {title}", f"vctools menu {uniq} {chat_id}")])
+                target_chat_id = info_chat.id
+
+                all_buttons.append(
+                    [
+                        InlineKeyboardButton(
+                            f"🎙 {title}",
+                            callback_data=(
+                                f"vctools menu "
+                                f"{uniq} "
+                                f"{target_chat_id}"
+                            ),
+                            style=enums.ButtonStyle.PRIMARY,
+                        )
+                    ]
+                )
+
             return await callback_query.edit_message_text(
-                teks, reply_markup=ikb(all_buttons)
+                teks,
+                reply_markup=InlineKeyboardMarkup(
+                    all_buttons
+                ),
             )
+
+        # =====================================================
+        # OPEN MIC
+        # =====================================================
+
         elif command == "openmic":
             group_call = await userbot.get_call(chat_id)
+
             if not group_call:
-                return await callback_query.answer(f"No active VC in {title}", True)
-            info_chat = state.get(chat_id, chat_id)
+                return await callback_query.answer(
+                    f"No active VC in {title}",
+                    True,
+                )
+
+            info_chat = state.get(
+                chat_id,
+                chat_id,
+            )
+
             title = info_chat.get("title")
+
             try:
-                await userbot.group_call.unmute_stream(chat_id)
-                return await callback_query.answer(f"Mic opened in {title} {chat_id}")
-            except (NotInCallError, NoActiveGroupCall):
-                return await callback_query.answer(f"No active VC in {title}", True)
+                await userbot.group_call.unmute_stream(
+                    chat_id
+                )
+
+                return await callback_query.answer(
+                    f"Mic opened in {title} {chat_id}"
+                )
+
+            except (
+                NotInCallError,
+                NoActiveGroupCall,
+            ):
+                return await callback_query.answer(
+                    f"No active VC in {title}",
+                    True,
+                )
+
+        # =====================================================
+        # MUTE MIC
+        # =====================================================
+
         elif command == "mutemic":
             group_call = await userbot.get_call(chat_id)
+
             if not group_call:
-                return await callback_query.answer(f"No active VC in {title}", True)
-            info_chat = state.get(chat_id, chat_id)
+                return await callback_query.answer(
+                    f"No active VC in {title}",
+                    True,
+                )
+
+            info_chat = state.get(
+                chat_id,
+                chat_id,
+            )
+
             title = info_chat.get("title")
+
             try:
-                await userbot.group_call.mute_stream(chat_id)
-                return await callback_query.answer(f"Mic muted in {title} {chat_id}")
-            except (NotInCallError, NoActiveGroupCall):
-                return await callback_query.answer(f"No active VC in {title}", True)
+                await userbot.group_call.mute_stream(
+                    chat_id
+                )
+
+                return await callback_query.answer(
+                    f"Mic muted in {title} {chat_id}"
+                )
+
+            except (
+                NotInCallError,
+                NoActiveGroupCall,
+            ):
+                return await callback_query.answer(
+                    f"No active VC in {title}",
+                    True,
+                )
+
+        # =====================================================
+        # LEAVE VC
+        # =====================================================
+
         elif command == "leavevc":
             group_call = await userbot.get_call(chat_id)
+
             if not group_call:
-                return await callback_query.answer(f"No active VC in {title}", True)
-            info_chat = state.get(chat_id, chat_id)
+                return await callback_query.answer(
+                    f"No active VC in {title}",
+                    True,
+                )
+
+            info_chat = state.get(
+                chat_id,
+                chat_id,
+            )
+
             title = info_chat.get("title")
+
             try:
-                await userbot.group_call.leave_call(chat_id)
-                return await callback_query.answer(f"Left VC in {title} {chat_id}")
-            except (NotInCallError, NoActiveGroupCall):
-                return await callback_query.answer(f"No active VC in {title}", True)
+                await userbot.group_call.leave_call(
+                    chat_id
+                )
+
+                return await callback_query.answer(
+                    f"Left VC in {title} {chat_id}"
+                )
+
+            except (
+                NotInCallError,
+                NoActiveGroupCall,
+            ):
+                return await callback_query.answer(
+                    f"No active VC in {title}",
+                    True,
+                )
+
+        # =====================================================
+        # SET VC TITLE
+        # =====================================================
+
         elif command == "vctitle":
-            info_chat = state.get(chat_id, chat_id)
+            info_chat = state.get(
+                chat_id,
+                chat_id,
+            )
+
             title = info_chat.get("title")
+
             group_call = await userbot.get_call(chat_id)
+
             if not group_call:
-                return await callback_query.answer(f"No active VC in {title}", True)
+                return await callback_query.answer(
+                    f"No active VC in {title}",
+                    True,
+                )
+
             try:
                 new_title = await bot.ask(
                     callback_query.message.chat.id,
-                    f"**Send me the new title for VC in {title}**\n\n__You have 2 minutes to send the title, this request will be canceled after 2 minutes.__",
+                    (
+                        f"**Send me the new title for VC "
+                        f"in {title}**\n\n"
+                        f"__You have 2 minutes to send the "
+                        f"title, this request will be "
+                        f"canceled after 2 minutes.__"
+                    ),
                     timeout=120,
                     filters=filters.text,
                 )
+
             except TimeoutError:
                 return await callback_query.answer(
-                    "Request canceled due to timeout.", True
+                    "Request canceled due to timeout.",
+                    True,
                 )
+
             new_title = new_title.text.strip()
+
             try:
                 await userbot.invoke(
                     raw.functions.phone.EditGroupCallTitle(
                         call=InputGroupCall(
-                            id=group_call.id, access_hash=group_call.access_hash
+                            id=group_call.id,
+                            access_hash=group_call.access_hash,
                         ),
                         title=new_title,
                     )
                 )
+
                 return await callback_query.answer(
-                    f"Changed VC title to '{new_title}' in {title}", True
+                    f"Changed VC title to "
+                    f"'{new_title}' in {title}",
+                    True,
                 )
+
             except Exception as e:
-                return await callback_query.answer(f"Error: {e}", True)
+                return await callback_query.answer(
+                    f"Error: {e}",
+                    True,
+                )
+
+        # =====================================================
+        # LISTENERS
+        # =====================================================
+
         elif command == "listner":
-            info_chat = state.get(chat_id, chat_id)
+            info_chat = state.get(
+                chat_id,
+                chat_id,
+            )
+
             title = info_chat.get("title")
+
             group_call = await userbot.get_call(chat_id)
+
             if not group_call:
-                return await callback_query.answer(f"No active VC in {title}", True)
+                return await callback_query.answer(
+                    f"No active VC in {title}",
+                    True,
+                )
+
             call_title = group_call.title
+
             userbot.group_call.cache_peer(chat_id)
-            participants = await userbot.group_call.get_participants(chat_id)
+
+            participants = (
+                await userbot.group_call.get_participants(
+                    chat_id
+                )
+            )
+
             mentions = []
+
             for participant in participants:
                 user_id = participant.user_id
+
                 try:
-                    user = await userbot.get_users(user_id)
+                    user = await userbot.get_users(
+                        user_id
+                    )
+
                     mention = user.mention
                     volume = participant.volume
-                    status = "🔇 Muted" if participant.muted else "🔊 Speaking"
-                    mentions.append(
-                        f"<b>{mention} | status: <code>{status}</code> | volume: <code>{volume}</code></b>"
+
+                    status = (
+                        "🔇 Muted"
+                        if participant.muted
+                        else "🔊 Speaking"
                     )
+
+                    mentions.append(
+                        f"<b>{mention} | "
+                        f"status: <code>{status}</code> | "
+                        f"volume: <code>{volume}</code></b>"
+                    )
+
                 except Exception:
-                    mentions.append(f"{user_id} status Unknown")
+                    mentions.append(
+                        f"{user_id} status Unknown"
+                    )
 
             total_participants = len(participants)
+
             if total_participants == 0:
-                return await callback_query.answer(f"No participants in {title}", True)
+                return await callback_query.answer(
+                    f"No participants in {title}",
+                    True,
+                )
 
             mentions_text = "\n".join(
                 [
-                    (f"┣ {mention}" if i < total_participants - 1 else f"┖ {mention}")
+                    (
+                        f"┣ {mention}"
+                        if i < total_participants - 1
+                        else f"┖ {mention}"
+                    )
                     for i, mention in enumerate(mentions)
                 ]
             )
@@ -274,22 +565,65 @@ Title: <code>{call_title}</code>
 ❒ Participants:
 {mentions_text}</b>
 """
-            sub_buttons = ikb(
+
+            sub_buttons = InlineKeyboardMarkup(
                 [
                     [
-                        ("🎙 Open Mic", f"vctools openmic {uniq} {chat_id}"),
-                        ("🔇 Mute Mic", f"vctools mutemic {uniq} {chat_id}"),
+                        InlineKeyboardButton(
+                            "🎙 Open Mic",
+                            callback_data=(
+                                f"vctools openmic {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.SUCCESS,
+                        ),
+                        InlineKeyboardButton(
+                            "🔇 Mute Mic",
+                            callback_data=(
+                                f"vctools mutemic {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.SECONDARY,
+                        ),
                     ],
                     [
-                        ("❌ Leave VC", f"vctools leavevc {uniq} {chat_id}"),
-                        ("👥 Listeners", f"vctools listner {uniq} {chat_id}"),
+                        InlineKeyboardButton(
+                            "❌ Leave VC",
+                            callback_data=(
+                                f"vctools leavevc {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.DANGER,
+                        ),
+                        InlineKeyboardButton(
+                            "👥 Listeners",
+                            callback_data=(
+                                f"vctools listner {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.PRIMARY,
+                        ),
                     ],
-                    [("✏️ Set Title", f"vctools vctitle {uniq} {chat_id}")],
-                    [("⬅️ Back", f"vctools back {uniq} {chat_id}")],
+                    [
+                        InlineKeyboardButton(
+                            "✏️ Set Title",
+                            callback_data=(
+                                f"vctools vctitle {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.PRIMARY,
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "⬅️ Back",
+                            callback_data=(
+                                f"vctools back {uniq} {chat_id}"
+                            ),
+                            style=enums.ButtonStyle.SECONDARY,
+                        ),
+                    ],
                 ]
             )
+
             return await callback_query.message.edit_text(
-                text, reply_markup=sub_buttons
+                text,
+                reply_markup=sub_buttons,
             )
 
 
