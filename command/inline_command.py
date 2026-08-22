@@ -45,25 +45,48 @@ async def inline_cancel(results, query):
     try:
         taskid = query.query.split()[1]
         msgid = query.query.split()[2]
+
         msg = (
-            f"<i>Task running #<code>{taskid}</code>. Click button for cancel task!</i>"
+            f"<i>Task running #<code>{taskid}</code>. "
+            f"Click button for cancel task!</i>"
         )
-        buttons = [
-            [("Cancel Task", f"cancel_task {taskid} {msgid}")],
-            [("Close", f"close inline_cancel {taskid} {msgid}")],
-        ]
+
+        buttons = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "❌ Cancel Task",
+                        callback_data=f"cancel_task {taskid} {msgid}",
+                        style=enums.ButtonStyle.DANGER,
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "✖️ Close",
+                        callback_data=f"close inline_cancel {taskid} {msgid}",
+                        style=enums.ButtonStyle.DANGER,
+                    )
+                ],
+            ]
+        )
+
         results.append(
             InlineQueryResultArticle(
                 title="Cancel Task",
                 input_message_content=InputTextMessageContent(
-                    msg, disable_web_page_preview=True
+                    msg,
+                    disable_web_page_preview=True,
                 ),
-                reply_markup=ikb(buttons),
+                reply_markup=buttons,
             )
         )
+
         return results
+
     except Exception:
-        logger.error(f"Inline cancel: {traceback.format_exc()}")
+        logger.error(
+            f"Inline cancel: {traceback.format_exc()}"
+        )
         return results
 
 
