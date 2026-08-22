@@ -36,7 +36,7 @@ WAJIB_JOIN = list(
         "WAJIB_JOIN", "zpsexz" 
     ).split() 
 )
-USENAME_OWNER = os.environ.get("USENAME_OWNER", "@rarirurerianie")
+USENAME_OWNER = os.environ.get("USENAME_OWNER", "@zphehe")
 API_ID = int(os.environ.get("API_ID",31019298))
 MAX_BOT = int(os.environ.get("MAX_BOT", 500))
 
@@ -48,11 +48,11 @@ BOT_TOKEN = os.environ.get(
 
 BOT_ID = int(BOT_TOKEN.split(":")[0])
 
-API_GEMINI = os.environ.get("API_GEMINI", "AIzaSyAMSxIG6-WV_mOGm6BL9TtFpW7GOMVmz3g")
+API_GEMINI = os.environ.get("API_GEMINI", "AIzaSyAvxOJlf5bSglnmT9GfzvNZPbio-swPndo")
 
-API_MAELYN = os.environ.get("API_MAELYN", "sk_ms_2e9541fd10b7f6f7a7e6c5ac24aa4d407c4ea02fa1a58854")
+API_MAELYN = os.environ.get("API_MAELYN", "sk_ms_b704ee2b6f77a2e70c5088ca8a638eba46df421481e4ed88")
 
-API_BOTCAHX = os.environ.get("API_BOTCAHX", "awas_ada_maling")
+API_BOTCAHX = os.environ.get("API_BOTCAHX", "Mx6ZHlmS")
 
 BOT_NAME = os.environ.get("BOT_NAME", "userbot")
 
@@ -95,7 +95,7 @@ SPOTIFY_CLIENT_ID = os.environ.get(
 SPOTIFY_CLIENT_SECRET = os.environ.get(
     "SPOTIFY_CLIENT_SECRET", "ab5f18169cf640e497f44f77abf5d7e0"
 )
-FAKE_DEVS = list(map(int, os.environ.get("FAKE_DEVS", "1289196629").split()))
+FAKE_DEVS = list(map(int, os.environ.get("FAKE_DEVS", "7586938131").split()))
 SAWERIA_EMAIL = os.environ.get("SAWERIA_EMAIL", "awabsauqi12@gmail.com")
 SAWERIA_USERID = os.environ.get(
     "SAWERIA_USERID", "aa57af08-62d1-4bbd-b082-96880455af76"
@@ -105,7 +105,7 @@ sexon12 = list(
     map(
         int,
         os.environ.get(
-            "sexon12",
+            "zphehe",
             "7586938131",
         ).split(),
     )
