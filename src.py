@@ -2,15 +2,6 @@ import os
 import sys
 import asyncio
 
-from helpers.ask_shim import install_ask_shim; install_ask_shim()
-
-# Stub ListenerTimeout: gak ada di kurigram 2.2.26.
-import pyrogram.errors as _err
-if not hasattr(_err, "ListenerTimeout"):
-    class ListenerTimeout(Exception):
-        pass
-    _err.ListenerTimeout = ListenerTimeout
-
 from datetime import datetime, timedelta, timezone
 
 import uvloop
