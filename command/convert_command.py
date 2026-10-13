@@ -15,7 +15,18 @@ import gtts
 import requests
 import speech_recognition as sr
 from bs4 import BeautifulSoup
-from deep_translator import GoogleTranslator
+from deep_translator import GoogleTranslator, MyMemoryTranslator
+
+# MyMemory perlu kode locale (id-ID, en-GB), beda format dari GoogleTranslator (id, en)
+MYMEMMY_LOCALE = {"id": "id-ID", "en": "en-GB", "ja": "ja-JP", "ko": "ko-KR", "zh-CN": "zh-CN", "ar": "ar-SA", "es": "es-ES", "fr": "fr-FR", "de": "de-DE", "ru": "ru-RU"}
+
+def _translate_text(txt: str, target: str) -> str:
+    """Google dulu; kalau gagal (IP VPS diblok/limit), fallback MyMemory."""
+    try:
+        return GoogleTranslator(source="auto", target=target).translate(txt)
+    except Exception:
+        loc = MYMEMMY_LOCALE.get(target, "en-GB")
+        return MyMemoryTranslator(source="id-ID", target=loc).translate(txt)
 from PIL import Image
 from pyrogram import raw, types
 
@@ -791,18 +802,12 @@ async def tr_cmd(client, message):
                 f"{em.gagal}**No text found to translate!**"
             )
 
-        # GoogleTranslator mendukung source="auto"
-        # sehingga bahasa sumber tidak perlu dideteksi manual.
-        translator = GoogleTranslator(
-            source="auto",
-            target=bhs
-        )
-
         # deep-translator bersifat synchronous.
         # Jalankan dalam thread agar event loop Pyrogram tidak terblokir.
+        # Google dulu, fallback MyMemory kalau IP diblok.
         translated = await asyncio.to_thread(
-            translator.translate,
-            txt
+            _translate_text,
+            txt, bhs
         )
 
         reply = f"{em.sukses} Translated:\n\n{translated}"
